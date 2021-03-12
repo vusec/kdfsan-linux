@@ -98,6 +98,7 @@ parse_symbol() {
 
 	# Strip the symbol name so that we could look it up
 	local name=${symbol%+*}
+	local shortname=${name#"dfs$"}
 
 	# Use 'nm vmlinux' to figure out the base address of said symbol.
 	# It's actually faster to call it every time than to load it
@@ -105,7 +106,8 @@ parse_symbol() {
 	if [[ "${cache[$module,$name]+isset}" == "isset" ]]; then
 		local base_addr=${cache[$module,$name]}
 	else
-		local base_addr=$(nm "$objfile" | awk '$3 == "'$name'" && ($2 == "t" || $2 == "T") {print $1; exit}')
+		# local base_addr=$(nm "$objfile" | awk '$3 == "'$name'" && ($2 == "t" || $2 == "T") {print $1; exit}')
+		local base_addr=$(nm "$objfile" | grep -i ' t ' | awk "/ *${shortname}\$/ {print \$1}" | head -n1)
 		if [[ $base_addr == "" ]] ; then
 			# address not found
 			return

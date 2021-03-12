@@ -939,6 +939,7 @@ config DEBUG_STACKOVERFLOW
 
 source "lib/Kconfig.kasan"
 source "lib/Kconfig.kfence"
+source "lib/Kconfig.kdfsan"
 
 endmenu # "Memory Debugging"
 

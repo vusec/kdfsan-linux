@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0
+
+export CFLAGS_KDFSAN := -fsanitize=dataflow \
+	-mllvm -dfsan-kernel \
+	-mllvm -dfsan-event-callbacks \
+	-mllvm -dfsan-kasper-branch-checks \
+	-mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist.txt
