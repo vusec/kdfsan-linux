@@ -1645,6 +1645,7 @@ config SLAB
 
 config SLUB
 	bool "SLUB (Unqueued Allocator)"
+	depends on !KDFSAN
 	select HAVE_HARDENED_USERCOPY_ALLOCATOR
 	help
 	   SLUB is a slab allocator that minimizes cache line usage
@@ -1656,6 +1657,7 @@ config SLUB
 
 config SLOB
 	depends on EXPERT
+	depends on !KDFSAN
 	bool "SLOB (Simple Allocator)"
 	help
 	   SLOB replaces the stock allocator with a drastically simpler

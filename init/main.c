@@ -92,6 +92,7 @@
 #include <linux/rodata_test.h>
 #include <linux/jump_label.h>
 #include <linux/mem_encrypt.h>
+#include <linux/kdfsan.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -516,6 +517,7 @@ static void __init mm_init(void)
 	 * bigger than MAX_ORDER unless SPARSEMEM.
 	 */
 	page_ext_init_flatmem();
+	kdfsan_init_shadow();
 	mem_init();
 	kmem_cache_init();
 	pgtable_init();
