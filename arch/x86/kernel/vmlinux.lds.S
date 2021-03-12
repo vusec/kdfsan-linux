@@ -436,7 +436,7 @@ SECTIONS
 	.got : {
 		*(.got) *(.igot.*)
 	}
-	ASSERT(SIZEOF(.got) == 0, "Unexpected GOT entries detected!")
+	// ASSERT(SIZEOF(.got) == 0, "Unexpected GOT entries detected!")
 
 	.plt : {
 		*(.plt) *(.plt.*) *(.iplt)
