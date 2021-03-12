@@ -229,6 +229,19 @@ void __asan_unregister_globals(struct kasan_global *globals, size_t size)
 }
 EXPORT_SYMBOL(__asan_unregister_globals);
 
+#ifdef CONFIG_KDFSAN
+#define DEFINE_ASAN_LOAD_STORE(size)					\
+	void __asan_load##size(unsigned long addr) { }			\
+	EXPORT_SYMBOL(__asan_load##size);				\
+	__alias(__asan_load##size)					\
+	void __asan_load##size##_noabort(unsigned long);		\
+	EXPORT_SYMBOL(__asan_load##size##_noabort);			\
+	void __asan_store##size(unsigned long addr)	{ }			\
+	EXPORT_SYMBOL(__asan_store##size);				\
+	__alias(__asan_store##size)					\
+	void __asan_store##size##_noabort(unsigned long);		\
+	EXPORT_SYMBOL(__asan_store##size##_noabort)
+#else /* CONFIG_KDFSAN */
 #define DEFINE_ASAN_LOAD_STORE(size)					\
 	void __asan_load##size(unsigned long addr)			\
 	{								\
@@ -246,6 +259,7 @@ EXPORT_SYMBOL(__asan_unregister_globals);
 	__alias(__asan_store##size)					\
 	void __asan_store##size##_noabort(unsigned long);		\
 	EXPORT_SYMBOL(__asan_store##size##_noabort)
+#endif /* CONFIG_KDFSAN */
 
 DEFINE_ASAN_LOAD_STORE(1);
 DEFINE_ASAN_LOAD_STORE(2);
@@ -253,6 +267,21 @@ DEFINE_ASAN_LOAD_STORE(4);
 DEFINE_ASAN_LOAD_STORE(8);
 DEFINE_ASAN_LOAD_STORE(16);
 
+#ifdef CONFIG_KDFSAN
+void __asan_loadN(unsigned long addr, size_t size) { }
+EXPORT_SYMBOL(__asan_loadN);
+
+__alias(__asan_loadN)
+void __asan_loadN_noabort(unsigned long, size_t);
+EXPORT_SYMBOL(__asan_loadN_noabort);
+
+void __asan_storeN(unsigned long addr, size_t size) { }
+EXPORT_SYMBOL(__asan_storeN);
+
+__alias(__asan_storeN)
+void __asan_storeN_noabort(unsigned long, size_t);
+EXPORT_SYMBOL(__asan_storeN_noabort);
+#else /* CONFIG_KDFSAN */
 void __asan_loadN(unsigned long addr, size_t size)
 {
 	kasan_check_range(addr, size, false, _RET_IP_);
@@ -272,6 +301,7 @@ EXPORT_SYMBOL(__asan_storeN);
 __alias(__asan_storeN)
 void __asan_storeN_noabort(unsigned long, size_t);
 EXPORT_SYMBOL(__asan_storeN_noabort);
+#endif /* CONFIG_KDFSAN */
 
 /* to shut up compiler complaints */
 void __asan_handle_no_return(void) {}
