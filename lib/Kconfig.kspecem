@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config HAVE_ARCH_KSPECEM
+  bool
+
+if HAVE_ARCH_KSPECEM
+
+config KSPECEM
+  bool "kspecem: add checkpointing support"
+  default n
+
+endif

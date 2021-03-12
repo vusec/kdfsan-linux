@@ -910,6 +910,23 @@ CC_FLAGS_LTO	+= -fvisibility=hidden
 
 # Limit inlining across translation units to reduce binary size
 KBUILD_LDFLAGS += -mllvm -import-instr-limit=5
+
+ifdef CONFIG_KSPECEM
+KBUILD_LDFLAGS += -mllvm=-load=${ROOT}/build/passes/kspecem-check-spec-length/LLVMKSpecEmCheckSpecLengthPass.so
+KBUILD_LDFLAGS += -mllvm=-load=${ROOT}/build/passes/kspecem-pf-checker/LLVMKSpecEmPfCheckerPass.so
+KSPECEM_FUNCS_DIR=${ROOT}/passes/kspecem-abilists
+KSPECEM_BLACKLIST_FUNCS=$(KSPECEM_FUNCS_DIR)/blacklist-funcs.txt
+KSPECEM_INTERRUPT_FUNCS=$(KSPECEM_FUNCS_DIR)/interrupt-funcs.txt
+KSPECEM_NO_SPEC_FUNCS=$(KSPECEM_FUNCS_DIR)/no-spec-funcs.txt
+KBUILD_LDFLAGS += -mllvm=-load=${ROOT}/build/passes/kspecem-spec/LLVMKSpecEmSpecPass.so
+KBUILD_LDFLAGS += -mllvm="-kspecem-spec-abilist=$(KSPECEM_BLACKLIST_FUNCS),$(KSPECEM_INTERRUPT_FUNCS),$(KSPECEM_NO_SPEC_FUNCS)"
+KBUILD_LDFLAGS += -mllvm=-load=${ROOT}/build/passes/kspecem/LLVMKSpecEmPass.so
+KBUILD_LDFLAGS += -mllvm="-kspecem-abilist=$(KSPECEM_BLACKLIST_FUNCS),$(KSPECEM_INTERRUPT_FUNCS),$(KSPECEM_NO_SPEC_FUNCS)"
+
+KSPECEM_FUNC_PREFIX=dfs$
+KBUILD_LDFLAGS += -mllvm=-kspecem-spec-func-prefix=$(KSPECEM_FUNC_PREFIX)
+KBUILD_LDFLAGS += -mllvm=-kspecem-func-prefix=$(KSPECEM_FUNC_PREFIX)
+endif
 endif
 
 ifdef CONFIG_LTO
@@ -1157,6 +1174,10 @@ else
 KBUILD_VMLINUX_LIBS := $(patsubst %/,%/lib.a, $(libs-y))
 endif
 KBUILD_VMLINUX_OBJS += $(patsubst %/,%/built-in.a, $(drivers-y))
+
+ifdef CONFIG_KSPECEM
+KBUILD_VMLINUX_OBJS += ${ROOT}/build/static/kspecem/libkspecem.a
+endif
 
 export KBUILD_VMLINUX_OBJS KBUILD_VMLINUX_LIBS
 export KBUILD_LDS          := arch/$(SRCARCH)/kernel/vmlinux.lds

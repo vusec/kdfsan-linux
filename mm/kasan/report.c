@@ -25,6 +25,7 @@
 #include <linux/module.h>
 #include <linux/sched/task_stack.h>
 #include <linux/uaccess.h>
+#include <linux/kspecem.h>
 #include <trace/events/error_report.h>
 
 #include <asm/sections.h>
@@ -61,8 +62,13 @@ __setup("kasan_multi_shot", kasan_set_multi_shot);
 
 static void print_error_description(struct kasan_access_info *info)
 {
+#ifdef CONFIG_KSPECEM
+	pr_err("BUG: KASAN: %s in %pS(0x%px)\n",
+		kasan_get_bug_type(info), (void *)info->ip, (void *)info->ip);
+#else /* CONFIG_KSPECEM */
 	pr_err("BUG: KASAN: %s in %pS\n",
 		kasan_get_bug_type(info), (void *)info->ip);
+#endif /* CONFIG_KSPECEM */
 	if (info->access_size)
 		pr_err("%s of size %zu at addr %px by task %s/%d\n",
 			info->is_write ? "Write" : "Read", info->access_size,
@@ -391,6 +397,8 @@ static void __kasan_report(unsigned long addr, size_t size, bool is_write,
 	start_report(&flags);
 
 	print_error_description(&info);
+
+#ifndef CONFIG_KSPECEM
 	if (addr_has_metadata(untagged_addr))
 		kasan_print_tags(get_tag(tagged_addr), info.first_bad_addr);
 	pr_err("\n");
@@ -402,12 +410,24 @@ static void __kasan_report(unsigned long addr, size_t size, bool is_write,
 	} else {
 		dump_stack();
 	}
+#endif /* CONFIG_KSPECEM */
 
 	end_report(&flags, addr);
 }
 
+#ifdef CONFIG_KSPECEM
 bool kasan_report(unsigned long addr, size_t size, bool is_write,
 			unsigned long ip)
+{
+  //return kspecem_hook_kasan_report(addr, size, is_write, ip);
+  return false;
+}
+bool kasan_report_original(unsigned long addr, size_t size, bool is_write,
+			unsigned long ip)
+#else /* CONFIG_KSPECEM */
+bool kasan_report(unsigned long addr, size_t size, bool is_write,
+			unsigned long ip)
+#endif /* CONFIG_KSPECEM */
 {
 	unsigned long flags = user_access_save();
 	bool ret = false;

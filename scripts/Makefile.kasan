@@ -48,4 +48,8 @@ CFLAGS_KASAN := -fsanitize=kernel-hwaddress \
 
 endif # CONFIG_KASAN_SW_TAGS
 
+ifdef CONFIG_KSPECEM
+CFLAGS_KASAN += $(call cc-param,asan-recover=0)
+endif
+
 export CFLAGS_KASAN CFLAGS_KASAN_NOSANITIZE

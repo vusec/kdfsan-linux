@@ -52,6 +52,13 @@ __visible noinstr void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 		regs->ax = x32_sys_call_table[nr](regs);
 #endif
 	}
+#ifdef CONFIG_KSPECEM
+	else if (nr >= 600 && nr < 1200) {
+		nr = array_index_nospec(nr - 600, NR_syscalls);
+		regs->ax = sys_call_table[nr](regs);
+	}
+#endif /* CONFIG_KSPECEM */
+
 	instrumentation_end();
 	syscall_exit_to_user_mode(regs);
 }
