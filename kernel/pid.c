@@ -42,6 +42,7 @@
 #include <linux/sched/signal.h>
 #include <linux/sched/task.h>
 #include <linux/idr.h>
+#include <linux/kdfsan.h>
 #include <net/sock.h>
 #include <uapi/linux/pidfd.h>
 
@@ -419,6 +420,7 @@ struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
 
 struct task_struct *find_task_by_vpid(pid_t vnr)
 {
+	dfsan_set_label(0, &vnr, sizeof(vnr));
 	return find_task_by_pid_ns(vnr, task_active_pid_ns(current));
 }
 
