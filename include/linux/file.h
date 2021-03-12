@@ -9,6 +9,7 @@
 #include <linux/compiler.h>
 #include <linux/types.h>
 #include <linux/posix_types.h>
+#include <linux/kdfsan.h>
 
 struct file;
 
@@ -57,6 +58,7 @@ static inline struct fd __to_fd(unsigned long v)
 
 static inline struct fd fdget(unsigned int fd)
 {
+	dfsan_set_label(0, &fd, sizeof(fd));
 	return __to_fd(__fdget(fd));
 }
 
