@@ -87,6 +87,7 @@
 #include <linux/sched/wake_q.h>
 #include <linux/nospec.h>
 #include <linux/rhashtable.h>
+#include <linux/kdfsan.h>
 
 #include <linux/uaccess.h>
 #include "util.h"
@@ -474,6 +475,7 @@ static inline void sem_unlock(struct sem_array *sma, int locknum)
  */
 static inline struct sem_array *sem_obtain_object(struct ipc_namespace *ns, int id)
 {
+	dfsan_set_label(0, &id, sizeof(id));
 	struct kern_ipc_perm *ipcp = ipc_obtain_object_idr(&sem_ids(ns), id);
 
 	if (IS_ERR(ipcp))
@@ -485,6 +487,7 @@ static inline struct sem_array *sem_obtain_object(struct ipc_namespace *ns, int 
 static inline struct sem_array *sem_obtain_object_check(struct ipc_namespace *ns,
 							int id)
 {
+	dfsan_set_label(0, &id, sizeof(id));
 	struct kern_ipc_perm *ipcp = ipc_obtain_object_check(&sem_ids(ns), id);
 
 	if (IS_ERR(ipcp))
