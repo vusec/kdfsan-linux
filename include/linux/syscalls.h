@@ -127,6 +127,21 @@ union bpf_attr;
 #define __SC_STR_ADECL(t, a)	#a
 #define __SC_STR_TDECL(t, a)	#t
 
+#define __MAPN0(n,m,...)
+#define __MAPN1(n,m,t,a,...) m(t,a,n-1)
+#define __MAPN2(n,m,t,a,...) m(t,a,n-2), __MAPN1(n,m,__VA_ARGS__)
+#define __MAPN3(n,m,t,a,...) m(t,a,n-3), __MAPN2(n,m,__VA_ARGS__)
+#define __MAPN4(n,m,t,a,...) m(t,a,n-4), __MAPN3(n,m,__VA_ARGS__)
+#define __MAPN5(n,m,t,a,...) m(t,a,n-5), __MAPN4(n,m,__VA_ARGS__)
+#define __MAPN6(n,m,t,a,...) m(t,a,n-6), __MAPN5(n,m,__VA_ARGS__)
+#define __MAPN(n,...) __MAPN##n(n,__VA_ARGS__)
+#ifdef CONFIG_KDFSAN
+#include <linux/kdfsan.h>
+#define __SC_KDF_TAINT(t,a,n) kdfinit_taint_syscall_arg((void*)&a,sizeof(t),n)
+#else /* CONFIG_KDFSAN */
+#define __SC_KDF_TAINT(t, a)
+#endif /* CONFIG_KDFSAN */
+
 extern struct trace_event_class event_class_syscall_enter;
 extern struct trace_event_class event_class_syscall_exit;
 extern struct trace_event_functions enter_syscall_print_funcs;
@@ -232,6 +247,27 @@ static inline int is_syscall_trace_event(struct trace_event_call *tp_event)
  * done within __do_sys_*().
  */
 #ifndef __SYSCALL_DEFINEx
+#ifdef CONFIG_KDFSAN
+#define __SYSCALL_DEFINEx(x, name, ...)					\
+	__diag_push();							\
+	__diag_ignore(GCC, 8, "-Wattribute-alias",			\
+		      "Type aliasing is used to sanitize syscall arguments");\
+	asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))	\
+		__attribute__((alias(__stringify(__se_sys##name))));	\
+	ALLOW_ERROR_INJECTION(sys##name, ERRNO);			\
+	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
+	asmlinkage long __se_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__));	\
+	asmlinkage long __se_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
+	{								\
+		__MAPN(x,__SC_KDF_TAINT,__VA_ARGS__); \
+		long ret = __do_sys##name(__MAP(x,__SC_CAST,__VA_ARGS__));\
+		__MAP(x,__SC_TEST,__VA_ARGS__);				\
+		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
+		return ret;						\
+	}								\
+	__diag_pop();							\
+	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+#else /* CONFIG_KDFSAN */
 #define __SYSCALL_DEFINEx(x, name, ...)					\
 	__diag_push();							\
 	__diag_ignore(GCC, 8, "-Wattribute-alias",			\
@@ -250,6 +286,7 @@ static inline int is_syscall_trace_event(struct trace_event_call *tp_event)
 	}								\
 	__diag_pop();							\
 	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+#endif /* CONFIG_KDFSAN */
 #endif /* __SYSCALL_DEFINEx */
 
 /*
