@@ -52,6 +52,7 @@ static inline void clear_page(void *page)
 			   "=D" (page),
 			   "0" (page)
 			   : "cc", "memory", "rax", "rcx");
+	// TODO: Add KDFSAN hook here to clear page's shadow
 }
 
 void copy_page(void *to, void *from);

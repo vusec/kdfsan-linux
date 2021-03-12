@@ -98,6 +98,7 @@
 #include <linux/kcsan.h>
 #include <linux/init_syscalls.h>
 #include <linux/stackdepot.h>
+#include <linux/kdfsan.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -828,6 +829,7 @@ static void __init mm_init(void)
 	init_mem_debugging_and_hardening();
 	kfence_alloc_pool();
 	report_meminit();
+	kdfsan_init_shadow();
 	stack_depot_init();
 	mem_init();
 	/* page_owner must be initialized after buddy is ready */
