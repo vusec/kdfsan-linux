@@ -173,56 +173,60 @@ extern void clear_cpu_cap(struct cpuinfo_x86 *c, unsigned int bit);
  * majority of cases and you should stick to using it as it is generally
  * only two instructions: a RIP-relative MOV and a TEST.
  */
-static __always_inline bool _static_cpu_has(u16 bit)
-{
-	asm_volatile_goto("1: jmp 6f\n"
-		 "2:\n"
-		 ".skip -(((5f-4f) - (2b-1b)) > 0) * "
-			 "((5f-4f) - (2b-1b)),0x90\n"
-		 "3:\n"
-		 ".section .altinstructions,\"a\"\n"
-		 " .long 1b - .\n"		/* src offset */
-		 " .long 4f - .\n"		/* repl offset */
-		 " .word %P[always]\n"		/* always replace */
-		 " .byte 3b - 1b\n"		/* src len */
-		 " .byte 5f - 4f\n"		/* repl len */
-		 " .byte 3b - 2b\n"		/* pad len */
-		 ".previous\n"
-		 ".section .altinstr_replacement,\"ax\"\n"
-		 "4: jmp %l[t_no]\n"
-		 "5:\n"
-		 ".previous\n"
-		 ".section .altinstructions,\"a\"\n"
-		 " .long 1b - .\n"		/* src offset */
-		 " .long 0\n"			/* no replacement */
-		 " .word %P[feature]\n"		/* feature bit */
-		 " .byte 3b - 1b\n"		/* src len */
-		 " .byte 0\n"			/* repl len */
-		 " .byte 0\n"			/* pad len */
-		 ".previous\n"
-		 ".section .altinstr_aux,\"ax\"\n"
-		 "6:\n"
-		 " testb %[bitnum],%[cap_byte]\n"
-		 " jnz %l[t_yes]\n"
-		 " jmp %l[t_no]\n"
-		 ".previous\n"
-		 : : [feature]  "i" (bit),
-		     [always]   "i" (X86_FEATURE_ALWAYS),
-		     [bitnum]   "i" (1 << (bit & 7)),
-		     [cap_byte] "m" (((const char *)boot_cpu_data.x86_capability)[bit >> 3])
-		 : : t_yes, t_no);
-t_yes:
-	return true;
-t_no:
-	return false;
-}
+// static __always_inline bool _static_cpu_has(u16 bit)
+// {
+// 	asm_volatile_goto("1: jmp 6f\n"
+// 		 "2:\n"
+// 		 ".skip -(((5f-4f) - (2b-1b)) > 0) * "
+// 			 "((5f-4f) - (2b-1b)),0x90\n"
+// 		 "3:\n"
+// 		 ".section .altinstructions,\"a\"\n"
+// 		 " .long 1b - .\n"		/* src offset */
+// 		 " .long 4f - .\n"		/* repl offset */
+// 		 " .word %P[always]\n"		/* always replace */
+// 		 " .byte 3b - 1b\n"		/* src len */
+// 		 " .byte 5f - 4f\n"		/* repl len */
+// 		 " .byte 3b - 2b\n"		/* pad len */
+// 		 ".previous\n"
+// 		 ".section .altinstr_replacement,\"ax\"\n"
+// 		 "4: jmp %l[t_no]\n"
+// 		 "5:\n"
+// 		 ".previous\n"
+// 		 ".section .altinstructions,\"a\"\n"
+// 		 " .long 1b - .\n"		/* src offset */
+// 		 " .long 0\n"			/* no replacement */
+// 		 " .word %P[feature]\n"		/* feature bit */
+// 		 " .byte 3b - 1b\n"		/* src len */
+// 		 " .byte 0\n"			/* repl len */
+// 		 " .byte 0\n"			/* pad len */
+// 		 ".previous\n"
+// 		 ".section .altinstr_aux,\"ax\"\n"
+// 		 "6:\n"
+// 		 " testb %[bitnum],%[cap_byte]\n"
+// 		 " jnz %l[t_yes]\n"
+// 		 " jmp %l[t_no]\n"
+// 		 ".previous\n"
+// 		 : : [feature]  "i" (bit),
+// 		     [always]   "i" (X86_FEATURE_ALWAYS),
+// 		     [bitnum]   "i" (1 << (bit & 7)),
+// 		     [cap_byte] "m" (((const char *)boot_cpu_data.x86_capability)[bit >> 3])
+// 		 : : t_yes, t_no);
+// t_yes:
+// 	return true;
+// t_no:
+// 	return false;
+// }
+//
+// #define static_cpu_has(bit)					\
+// (								\
+// 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
+// 		boot_cpu_has(bit) :				\
+// 		_static_cpu_has(bit)				\
+// )
 
-#define static_cpu_has(bit)					\
-(								\
-	__builtin_constant_p(boot_cpu_has(bit)) ?		\
-		boot_cpu_has(bit) :				\
-		_static_cpu_has(bit)				\
-)
+/* llvm-11 generates invalid assembly due to asm goto  when compiling from bitcode files */
+#define static_cpu_has(bit)            boot_cpu_has(bit)
+
 #endif
 
 #define cpu_has_bug(c, bit)		cpu_has(c, (bit))
