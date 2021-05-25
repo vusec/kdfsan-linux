@@ -2600,12 +2600,12 @@ int main(int argc, char **argv)
 	for (n = 0; n < SYMBOL_HASH_SIZE; n++) {
 		struct symbol *s;
 
-		for (s = symbolhash[n]; s; s = s->next) {
-			if (s->is_static)
-				error("\"%s\" [%s] is a static %s\n",
-				      s->name, s->module->name,
-				      export_str(s->export));
-		}
+		// for (s = symbolhash[n]; s; s = s->next) {
+		// 	if (s->is_static)
+		// 		error("\"%s\" [%s] is a static %s\n",
+		// 		      s->name, s->module->name,
+		// 		      export_str(s->export));
+		// }
 	}
 
 	free(buf.p);
