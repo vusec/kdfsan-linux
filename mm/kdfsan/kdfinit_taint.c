@@ -106,18 +106,8 @@ static __always_inline bool kdfinit_label_also_has_controllable_read_label(dfsan
 
 // Called from outside kdfsan runtime lib -- so DO call kdfsan_interface functions from here
 void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
-  ENTER_KDFINIT_RT();
-  // SpectreV1 report
-  if(kdfinit_label_also_has_controllable_read_label(ptr_label)) {
-    ltckpt_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
-  }
-  // RIDL report
-  else if(dfsan_has_label(ptr_label, attacker_slab_massage_label) || dfsan_has_label(ptr_label, attacker_stack_massage_label) ||
-            dfsan_has_label(ptr_label, attacker_wild_lvi_label) || dfsan_has_label(ptr_label, attacker_user_lvi_label) ||
-            (kdfinit_is_kasan_bug(addr, size) && ptr_label != 0)) {
-    ltckpt_hook_ridl_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
-  }
-  LEAVE_KDFINIT_RT();
+  //ENTER_KDFINIT_RT();
+  //LEAVE_KDFINIT_RT();
 }
 
 // Called from within kdfsan runtime lib -- so DON'T call kdfsan_interface functions from here

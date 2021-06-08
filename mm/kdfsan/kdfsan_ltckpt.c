@@ -61,12 +61,6 @@ noinline unsigned long ltckpt_syscall_get_nr(void) {
   return (((struct pt_regs *)__ptr) - 1)->orig_ax;
 }
 
-void ltckpt_hook_ridl_report(unsigned long addr, size_t size, bool is_write, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) { }
-void ltckpt_hook_specv1_report(unsigned long addr, size_t size, bool is_write, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) { }
-void ltckpt_hook_memcpy(char *addr, size_t size) { }
-void ltckpt_common_late_init(void) { }
-
-
 size_t ltckpt_strlcat(char *dest, const char *src, size_t count) {
   size_t dsize = ltckpt_strlen(dest);
   size_t len = ltckpt_strlen(src);

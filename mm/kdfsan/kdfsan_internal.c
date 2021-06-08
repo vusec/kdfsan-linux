@@ -72,7 +72,7 @@ void kdf_print_bitvector(dfsan_label lbl) {
   u8 *b = label_list->bitvectors[lbl].b;
 
   //char str[NUM_LABELS + 1] = {0}; // +1 for all labels + NULL terminator
-  ltckpt_hook_memcpy(str_kdf_print_bitvector,NUM_LABELS+1); __memset(str_kdf_print_bitvector,0,NUM_LABELS + 1);
+  __memset(str_kdf_print_bitvector,0,NUM_LABELS + 1);
 
   for(int i = 0; i <= label_list->last_label; i++) {
     KDF_PANIC_ON(b[i] != 0 && b[i] != 1, "bitvector values should only be 0 or 1");
@@ -100,7 +100,7 @@ static dfsan_label kdf_create_next_label(u8 *b, const char *desc) {
   }
   else {
     // If bitvector was supplied, copy it into label_list
-    ltckpt_hook_memcpy((char*)this_bitvector->b,NUM_LABELS); __memcpy(this_bitvector->b, b, NUM_LABELS); // size could probably just be this_label; that'd be slightly faster
+    __memcpy(this_bitvector->b, b, NUM_LABELS); // size could probably just be this_label; that'd be slightly faster
   }
   my_strlcpy(this_bitvector->desc, desc, DESC_LEN);
 
@@ -167,7 +167,7 @@ dfsan_label kdf_union(dfsan_label l1, dfsan_label l2) {
   if (l1 == l2) return l1;
 
   //u8 b_tmp[NUM_LABELS] = {0};
-  ltckpt_hook_memcpy((char*)b_tmp_kdf_union,NUM_LABELS); __memset(b_tmp_kdf_union,0,NUM_LABELS);
+  __memset(b_tmp_kdf_union,0,NUM_LABELS);
 
   KDF_CHECK_LABEL(l1);
   KDF_CHECK_LABEL(l2);

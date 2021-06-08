@@ -140,9 +140,6 @@ int kdfsan_enable(void *data, u64 *val) {
     ini=get_cycles(); kdf_run_base_tests(true); end=get_cycles();
     printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed)", (end-ini)/1000000);
   }
-  printk("KDFSan: Enabling ltckpt...\n");
-  ltckpt_common_late_init();
-  printk("KDFSan: Enabling ltckpt: done.\n");
   if (kdf_to_run_tests) {
     SET_WHITELIST_TASK();
     printk("KDFSan: Re-running KDFSan base tests...\n");
