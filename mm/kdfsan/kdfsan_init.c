@@ -119,7 +119,7 @@ char *my_strcpy(char *dst, const char* src) {
 #define SET_WHITELIST_TASK() \
   char _saved_str[TASK_COMM_LEN]; \
   my_strcpy(_saved_str, current->comm); \
-  my_strcpy(current->comm, "spectator_task");
+  my_strcpy(current->comm, "kasper_task");
 
 #define RESET_TASK() \
   my_strcpy(current->comm, _saved_str);

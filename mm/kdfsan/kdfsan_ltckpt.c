@@ -47,7 +47,7 @@ int ltckpt_hook_is_whitelist_task(void) {
   unsigned long syscall_nr = ltckpt_syscall_get_nr();
   char *task_name = current->comm;
   if ((syscall_nr >= 600 && syscall_nr < 1200) ||
-      ltckpt_strncmp(task_name, "spectator_task", ltckpt_strlen("spectator_task")) == 0 ||
+      ltckpt_strncmp(task_name, "kasper_task", ltckpt_strlen("kasper_task")) == 0 ||
       ltckpt_strncmp(task_name, "syz-executor", ltckpt_strlen("syz-executor")) == 0) {
     return 1;
   }
