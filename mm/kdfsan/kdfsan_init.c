@@ -81,7 +81,6 @@ static void __init kdf_initialize_shadow(void) {
 /********/
 
 bool kdf_to_run_tests = false;
-bool kdf_to_run_kocher_tests = false;
 
 extern bool kdf_is_init_done; // should be false;
 extern bool kdf_is_in_rt; // should be false;
@@ -118,7 +117,7 @@ char *my_strcpy(char *dst, const char* src) {
 #define SET_WHITELIST_TASK() \
   char _saved_str[TASK_COMM_LEN]; \
   my_strcpy(_saved_str, current->comm); \
-  my_strcpy(current->comm, "kasper_task");
+  my_strcpy(current->comm, "kdfsan_task");
 
 #define RESET_TASK() \
   my_strcpy(current->comm, _saved_str);
@@ -127,8 +126,6 @@ char *my_strcpy(char *dst, const char* src) {
 
 void kdf_run_base_tests(bool is_first_run);
 void kdf_run_policies_tests(void);
-void kdf_run_kasper_tests(void);
-void kdf_run_kocher_tests(void);
 void kdfinit_init(void);
 
 int kdfsan_enable(void *data, u64 *val) {
@@ -153,16 +150,6 @@ int kdfsan_enable(void *data, u64 *val) {
     printk("KDFSan: Running KDFSan policies tests...\n");
     ini=get_cycles(); kdf_run_policies_tests(); end=get_cycles();
     printk("KDFSan: KDFSan policies tests complete (%liM cycles elapsed)", (end-ini)/1000000);
-    printk("Running Kasper tests...\n");
-    ini=get_cycles(); kdf_run_kasper_tests(); end=get_cycles();
-    printk("KDFSan: Kasper tests complete (%liM cycles elapsed).\n", (end-ini)/1000000);
-    RESET_TASK();
-  }
-  if (kdf_to_run_kocher_tests) {
-    SET_WHITELIST_TASK();
-    printk("Running Kocher tests...\n");
-    ini=get_cycles(); kdf_run_kocher_tests(); end=get_cycles();
-    printk("KDFSan: Kocher tests complete (%liM cycles elapsed).\n", (end-ini)/1000000);
     RESET_TASK();
   }
   printk("KDFSan: Done.\n");
@@ -180,7 +167,6 @@ int __init kdfsan_init(void) {
   kdfsan_dir  = debugfs_create_dir("kdfsan", NULL);
   debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
   debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_to_run_tests);
-  debugfs_create_bool("run_kocher_tests", 0666, kdfsan_dir, &kdf_to_run_kocher_tests);
   printk("KDFSan: Initialization done.\n");
   return 0;
 }

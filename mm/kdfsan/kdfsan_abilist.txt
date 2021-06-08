@@ -47,10 +47,6 @@ fun:kdf_run_base_tests=uninstrumented
 fun:kdf_run_base_tests=discard
 fun:kdf_run_policies_tests=uninstrumented
 fun:kdf_run_policies_tests=discard
-fun:kdf_run_kasper_tests=uninstrumented
-fun:kdf_run_kasper_tests=discard
-fun:kdf_run_kocher_tests=uninstrumented
-fun:kdf_run_kocher_tests=discard
 
 ##############################################################################
 
