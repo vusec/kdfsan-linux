@@ -3,6 +3,7 @@
 #include <linux/printk.h>
 #include <linux/mman.h>
 #include <linux/slab.h>
+#include <linux/uaccess.h>
 
 dfsan_label kdfinit_get_usercopy_label(void);
 
