@@ -47,29 +47,6 @@ fun:kdf_run_base_tests=uninstrumented
 fun:kdf_run_base_tests=discard
 fun:kdf_run_policies_tests=uninstrumented
 fun:kdf_run_policies_tests=discard
-fun:kdf_run_kasper_tests=uninstrumented
-fun:kdf_run_kasper_tests=discard
-fun:kdf_run_kocher_tests=uninstrumented
-fun:kdf_run_kocher_tests=discard
-
-##############################################################################
-
-# ltckpt patches and calls in static lib
-fun:ltckpt_syscall_get_nr=discard
-fun:ltckpt_syscall_get_nr=uninstrumented
-
-# ltckpt static library
-fun:ltckpt_hook_*=discard
-fun:ltckpt_hook_*=uninstrumented
-fun:ltckpt_assert_print=discard
-fun:ltckpt_assert_print=uninstrumented
-fun:ltckpt_asm_save_registers=discard
-fun:ltckpt_asm_save_registers=uninstrumented
-fun:ltckpt_asm_restore_registers=discard
-fun:ltckpt_asm_restore_registers=uninstrumented
-
-fun:ltckpt_init=uninstrumented
-fun:ltckpt_init=discard
 
 ##############################################################################
 
