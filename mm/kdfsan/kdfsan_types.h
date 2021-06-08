@@ -21,23 +21,12 @@
 dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label);
 void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write);
 
-#ifndef CONFIG_LTCKPT
 #define KDF_PANIC_ON(cond, ...) \
 do { \
   if(cond) { \
     panic(__VA_ARGS__); \
   } \
 } while(0)
-#else // CONFIG_LTCKPT
-#define STRINGIT2(l) #l
-#define STRINGIT(l) STRINGIT2(l)
-#define KDF_PANIC_ON(cond, ...) \
-do { \
-  if(cond) { \
-    ltckpt_assert_print(__FILE__, STRINGIT(__LINE__), #cond); \
-  } \
-} while(0)
-#endif // CONFIG_LTCKPT
 
 #define KDF_CHECK_LABEL(lbl) KDF_PANIC_ON(lbl > kdf_get_label_count(), \
     "Found label (%d) greater than max label (%d)", lbl, kdf_get_label_count());
