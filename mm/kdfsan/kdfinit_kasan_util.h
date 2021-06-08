@@ -13,7 +13,7 @@ static __always_inline const void *kdf_find_first_bad_addr(const void *addr, siz
 	const void *first_bad_addr = addr;
 
 	while (!shadow_val && first_bad_addr < addr + size) {
-		first_bad_addr += KASAN_GRANULE_SIZE;
+		first_bad_addr += KASAN_SHADOW_SCALE_SIZE;
 		shadow_val = *(u8 *)kasan_mem_to_shadow(first_bad_addr);
 	}
 	return first_bad_addr;
@@ -24,7 +24,7 @@ static __always_inline bool kdf_kasan_memory_is_poisoned_1(unsigned long addr)
   s8 shadow_value = *(s8 *)kasan_mem_to_shadow((void *)addr);
 
   if (unlikely(shadow_value)) {
-    s8 last_accessible_byte = addr & KASAN_GRANULE_MASK;
+    s8 last_accessible_byte = addr & KASAN_SHADOW_MASK;
     return unlikely(last_accessible_byte >= shadow_value);
   }
 
@@ -40,7 +40,7 @@ static __always_inline bool kdf_kasan_memory_is_poisoned_2_4_8(unsigned long add
    * Access crosses 8(shadow size)-byte boundary. Such access maps
    * into 2 shadow bytes, so we need to check them both.
    */
-  if (unlikely(((addr + size - 1) & KASAN_GRANULE_MASK) < size - 1))
+  if (unlikely(((addr + size - 1) & KASAN_SHADOW_MASK) < size - 1))
     return *shadow_addr || kdf_kasan_memory_is_poisoned_1(addr + size - 1);
 
   return kdf_kasan_memory_is_poisoned_1(addr + size - 1);
@@ -51,7 +51,7 @@ static __always_inline bool kdf_kasan_memory_is_poisoned_16(unsigned long addr)
   u16 *shadow_addr = (u16 *)kasan_mem_to_shadow((void *)addr);
 
   /* Unaligned 16-bytes access maps into 3 shadow bytes. */
-  if (unlikely(!IS_ALIGNED(addr, KASAN_GRANULE_SIZE)))
+  if (unlikely(!IS_ALIGNED(addr, KASAN_SHADOW_SCALE_SIZE)))
     return *shadow_addr || kdf_kasan_memory_is_poisoned_1(addr + 15);
 
   return *shadow_addr;
@@ -112,7 +112,7 @@ static __always_inline bool kdf_kasan_memory_is_poisoned_n(unsigned long addr,
     s8 *last_shadow = (s8 *)kasan_mem_to_shadow((void *)last_byte);
 
     if (unlikely(ret != (unsigned long)last_shadow ||
-      ((long)(last_byte & KASAN_GRANULE_MASK) >= *last_shadow)))
+      ((long)(last_byte & KASAN_SHADOW_MASK) >= *last_shadow)))
       return true;
   }
   return false;
@@ -166,8 +166,8 @@ static __always_inline kdfinit_access_enum kdfinit_kasan_shadow_access_type(cons
 
   u8 *shadow_addr = (u8 *)kasan_mem_to_shadow(kdf_find_first_bad_addr(addr, size));
 
-	// If shadow byte value is in [0, KASAN_KASAN_GRANULE_SIZE) we can look at the next shadow byte to determine the type of the bad access.
-	if (*shadow_addr > 0 && *shadow_addr <= KASAN_GRANULE_SIZE - 1) {
+	// If shadow byte value is in [0, KASAN_KASAN_SHADOW_SCALE_SIZE) we can look at the next shadow byte to determine the type of the bad access.
+	if (*shadow_addr > 0 && *shadow_addr <= KASAN_SHADOW_SCALE_SIZE - 1) {
 		shadow_addr++;
   }
 

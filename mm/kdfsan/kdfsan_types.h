@@ -12,6 +12,7 @@
 #include <linux/nmi.h>
 #include <linux/irqflags.h>
 #include <linux/memblock.h>
+#include <linux/bootmem.h>
 #include <linux/uaccess.h>
 #include <asm/cpu_entry_area.h>
 #include "kdfsan_ltckpt.h"

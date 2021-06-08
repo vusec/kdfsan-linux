@@ -11,6 +11,16 @@ void *__dfsw___memcpy(void *dest, const void *src, size_t n,
   return ret_val;
 }
 
+__must_check unsigned long __dfsw___memcpy_mcsafe(void *dest, const void *src, size_t n,
+                    dfsan_label dest_label, dfsan_label src_label,
+                    dfsan_label n_label, dfsan_label *ret_label) {
+  ltckpt_hook_memcpy(dest, n);
+  void * ret_val = __memcpy_mcsafe(dest, src, n);
+  *ret_label = dest_label;
+  dfsan_mem_transfer_callback(dest, src, n);
+  return ret_val;
+}
+
 void *__dfsw___memset(void *ptr, int val, size_t n,
                     dfsan_label ptr_label, dfsan_label val_label,
                     dfsan_label n_label, dfsan_label *ret_label) {

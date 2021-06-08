@@ -40,7 +40,7 @@ void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
   // FIXME: Potential bug -- If a range is in the same region as another range, then it will have >1 shadow page allocated for it
   start = (void *)ALIGN_DOWN((u64)start, PAGE_SIZE);
   size = ALIGN((u64)end - (u64)start, PAGE_SIZE);
-  shadow = memblock_alloc(size, PAGE_SIZE);
+  shadow = memblock_virt_alloc(size, PAGE_SIZE);
   for (addr = 0; addr < size; addr += PAGE_SIZE) {
     page = kdf_virt_to_page_or_null((char *)start + addr);
     shadow_p = kdf_virt_to_page_or_null((char *)shadow + addr);
@@ -59,13 +59,12 @@ void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
 static void __init kdf_initialize_shadow(void) {
   int nid;
   u64 i;
-  struct memblock_region *mb_region;
   const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
+  phys_addr_t p_start, p_end;
 
   printk("KDFSan: Initializing shadow...\n");
   printk("%s: recording all reserved memblock regions...\n",__func__);
-  for_each_reserved_mem_region(mb_region) kdf_record_future_shadow_range(phys_to_virt(mb_region->base),
-      phys_to_virt(mb_region->base + mb_region->size));
+  for_each_reserved_mem_region(i, &p_start, &p_end) kdf_record_future_shadow_range(phys_to_virt(p_start), phys_to_virt(p_end));
 
   printk("%s: recording .data region...\n",__func__);
   kdf_record_future_shadow_range(_sdata, _edata);
