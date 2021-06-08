@@ -28,7 +28,7 @@
 #endif
 
 #ifndef SYSCALL_ALIAS
-#define SYSCALL_ALIAS(alias, name) \
+#define SYSCALL_ALIAS(aka, name) \
   long aka(void) __attribute__((alias(__stringify(name))))
 #endif
 
