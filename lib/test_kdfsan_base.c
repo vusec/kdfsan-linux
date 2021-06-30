@@ -386,7 +386,7 @@ static void testbase_asminline(void) {
   tmp = dst = 0;
   asm ("mov %1, %0\n\t"
        "add $1, %0"
-       : "=r" (dst)
+       : "+r" (dst)
        : "r" (src_a));
   ASSERT(dst == src_a + 1 && src_a == 34 && src_b == 35); // just to make sure asm is correct
   ASSERT(dfsan_get_label(src_a) == a_label); // input label should remain the same
@@ -398,7 +398,7 @@ static void testbase_asminline(void) {
   asm ("mov %2, %1\n\t"
        "add $1, %1\n\t"
        "mov %1, %0"
-       : "=r" (dst), "=r" (tmp)
+       : "=r" (dst), "+r" (tmp)
        : "r" (src_a));
   ASSERT(tmp == src_a + 1 && dst == tmp && src_a == 34 && src_b == 35);
   ASSERT(dfsan_get_label(src_a) == a_label);
@@ -409,7 +409,7 @@ static void testbase_asminline(void) {
   tmp = dst = 0;
   asm ("mov %1, %0\n\t"
        "add %2, %0"
-       : "=r" (dst)
+       : "+r" (dst)
        : "r" (src_a), "r" (src_b));
   ASSERT(dst == src_a + src_b && src_a == 34 && src_b == 35);
   ASSERT(dfsan_get_label(dst) == 0);
