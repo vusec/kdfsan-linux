@@ -46,7 +46,8 @@ void clear_page_erms(void *page);
 
 static inline void clear_page(void *page)
 {
-	alternative_call_2(clear_page_orig,
+	kspecem_hook_memcpy((char*)page, PAGE_SIZE);
+	alternative_call_2_kspecem_whitelist(clear_page_orig,
 			   clear_page_rep, X86_FEATURE_REP_GOOD,
 			   clear_page_erms, X86_FEATURE_ERMS,
 			   "=D" (page),

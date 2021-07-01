@@ -43,7 +43,8 @@ static inline void arch_atomic64_set(atomic64_t *v, s64 i)
  */
 static __always_inline void arch_atomic64_add(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "addq %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "addq %1,%0"
 		     : "=m" (v->counter)
 		     : "er" (i), "m" (v->counter) : "memory");
 }
@@ -57,7 +58,8 @@ static __always_inline void arch_atomic64_add(s64 i, atomic64_t *v)
  */
 static inline void arch_atomic64_sub(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "subq %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "subq %1,%0"
 		     : "=m" (v->counter)
 		     : "er" (i), "m" (v->counter) : "memory");
 }
@@ -73,7 +75,8 @@ static inline void arch_atomic64_sub(s64 i, atomic64_t *v)
  */
 static inline bool arch_atomic64_sub_and_test(s64 i, atomic64_t *v)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX "subq", v->counter, e, "er", i);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "subq", v->counter, e, "er", i);
 }
 #define arch_atomic64_sub_and_test arch_atomic64_sub_and_test
 
@@ -85,7 +88,8 @@ static inline bool arch_atomic64_sub_and_test(s64 i, atomic64_t *v)
  */
 static __always_inline void arch_atomic64_inc(atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "incq %0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "incq %0"
 		     : "=m" (v->counter)
 		     : "m" (v->counter) : "memory");
 }
@@ -99,7 +103,8 @@ static __always_inline void arch_atomic64_inc(atomic64_t *v)
  */
 static __always_inline void arch_atomic64_dec(atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "decq %0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "decq %0"
 		     : "=m" (v->counter)
 		     : "m" (v->counter) : "memory");
 }
@@ -115,7 +120,8 @@ static __always_inline void arch_atomic64_dec(atomic64_t *v)
  */
 static inline bool arch_atomic64_dec_and_test(atomic64_t *v)
 {
-	return GEN_UNARY_RMWcc(LOCK_PREFIX "decq", v->counter, e);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_UNARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "decq", v->counter, e);
 }
 #define arch_atomic64_dec_and_test arch_atomic64_dec_and_test
 
@@ -129,7 +135,8 @@ static inline bool arch_atomic64_dec_and_test(atomic64_t *v)
  */
 static inline bool arch_atomic64_inc_and_test(atomic64_t *v)
 {
-	return GEN_UNARY_RMWcc(LOCK_PREFIX "incq", v->counter, e);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_UNARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "incq", v->counter, e);
 }
 #define arch_atomic64_inc_and_test arch_atomic64_inc_and_test
 
@@ -144,7 +151,8 @@ static inline bool arch_atomic64_inc_and_test(atomic64_t *v)
  */
 static inline bool arch_atomic64_add_negative(s64 i, atomic64_t *v)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX "addq", v->counter, s, "er", i);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "addq", v->counter, s, "er", i);
 }
 #define arch_atomic64_add_negative arch_atomic64_add_negative
 
@@ -199,7 +207,8 @@ static inline s64 arch_atomic64_xchg(atomic64_t *v, s64 new)
 
 static inline void arch_atomic64_and(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "andq %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "andq %1,%0"
 			: "+m" (v->counter)
 			: "er" (i)
 			: "memory");
@@ -217,7 +226,8 @@ static inline s64 arch_atomic64_fetch_and(s64 i, atomic64_t *v)
 
 static inline void arch_atomic64_or(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "orq %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "orq %1,%0"
 			: "+m" (v->counter)
 			: "er" (i)
 			: "memory");
@@ -235,7 +245,8 @@ static inline s64 arch_atomic64_fetch_or(s64 i, atomic64_t *v)
 
 static inline void arch_atomic64_xor(s64 i, atomic64_t *v)
 {
-	asm volatile(LOCK_PREFIX "xorq %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "xorq %1,%0"
 			: "+m" (v->counter)
 			: "er" (i)
 			: "memory");

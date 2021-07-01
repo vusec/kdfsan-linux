@@ -361,7 +361,7 @@ static inline void __loadsegment_fs(unsigned short value)
  * Save a segment register away:
  */
 #define savesegment(seg, value)				\
-	asm("mov %%" #seg ",%0":"=r" (value) : : "memory")
+	asm(KSPECEM_NO_RESTART "mov %%" #seg ",%0":"=r" (value) : : "memory")
 
 /*
  * x86-32 user GS accessors:

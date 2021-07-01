@@ -26,14 +26,14 @@ void native_write_cr0(unsigned long val);
 static inline unsigned long native_read_cr0(void)
 {
 	unsigned long val;
-	asm volatile("mov %%cr0,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	asm volatile(KSPECEM_NO_RESTART "mov %%cr0,%0\n\t" : "=r" (val) : __FORCE_ORDER);
 	return val;
 }
 
 static __always_inline unsigned long native_read_cr2(void)
 {
 	unsigned long val;
-	asm volatile("mov %%cr2,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	asm volatile(KSPECEM_NO_RESTART "mov %%cr2,%0\n\t" : "=r" (val) : __FORCE_ORDER);
 	return val;
 }
 
@@ -45,7 +45,7 @@ static __always_inline void native_write_cr2(unsigned long val)
 static inline unsigned long __native_read_cr3(void)
 {
 	unsigned long val;
-	asm volatile("mov %%cr3,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	asm volatile(KSPECEM_NO_RESTART "mov %%cr3,%0\n\t" : "=r" (val) : __FORCE_ORDER);
 	return val;
 }
 
@@ -63,13 +63,13 @@ static inline unsigned long native_read_cr4(void)
 	 * is functionally equivalent to CR4 == 0.  Keep it simple and pretend
 	 * that CR4 == 0 on CPUs that don't have CR4.
 	 */
-	asm volatile("1: mov %%cr4, %0\n"
+	asm volatile(KSPECEM_NO_RESTART "1: mov %%cr4, %0\n"
 		     "2:\n"
 		     _ASM_EXTABLE(1b, 2b)
 		     : "=r" (val) : "0" (0), __FORCE_ORDER);
 #else
 	/* CR4 always exists on x86_64. */
-	asm volatile("mov %%cr4,%0\n\t" : "=r" (val) : __FORCE_ORDER);
+	asm volatile(KSPECEM_NO_RESTART "mov %%cr4,%0\n\t" : "=r" (val) : __FORCE_ORDER);
 #endif
 	return val;
 }
@@ -86,7 +86,7 @@ static inline u32 rdpkru(void)
 	 * "rdpkru" instruction.  Places PKRU contents in to EAX,
 	 * clears EDX and requires that ecx=0.
 	 */
-	asm volatile(".byte 0x0f,0x01,0xee\n\t"
+	asm volatile(KSPECEM_NO_RESTART ".byte 0x0f,0x01,0xee\n\t"
 		     : "=a" (pkru), "=d" (edx)
 		     : "c" (ecx));
 	return pkru;
@@ -209,13 +209,13 @@ static inline void load_gs_index(unsigned int selector)
 
 static inline void clflush(volatile void *__p)
 {
-	asm volatile("clflush %0" : "+m" (*(volatile char __force *)__p));
+	asm volatile(KSPECEM_NO_RESTART "clflush %0" : "+m" (*(volatile char __force *)__p));
 }
 
 static inline void clflushopt(volatile void *__p)
 {
-	alternative_io(".byte " __stringify(NOP_DS_PREFIX) "; clflush %P0",
-		       ".byte 0x66; clflush %P0",
+	alternative_io(KSPECEM_NO_RESTART ".byte " __stringify(NOP_DS_PREFIX) "; clflush %P0",
+		       KSPECEM_NO_RESTART ".byte 0x66; clflush %P0",
 		       X86_FEATURE_CLFLUSHOPT,
 		       "+m" (*(volatile char __force *)__p));
 }
@@ -225,16 +225,16 @@ static inline void clwb(volatile void *__p)
 	volatile struct { char x[64]; } *p = __p;
 
 	asm volatile(ALTERNATIVE_2(
-		".byte " __stringify(NOP_DS_PREFIX) "; clflush (%[pax])",
-		".byte 0x66; clflush (%[pax])", /* clflushopt (%%rax) */
+		KSPECEM_NO_RESTART ".byte " __stringify(NOP_DS_PREFIX) "; clflush (%[pax])",
+		KSPECEM_NO_RESTART ".byte 0x66; clflush (%[pax])", /* clflushopt (%%rax) */
 		X86_FEATURE_CLFLUSHOPT,
-		".byte 0x66, 0x0f, 0xae, 0x30",  /* clwb (%%rax) */
+		KSPECEM_NO_RESTART ".byte 0x66, 0x0f, 0xae, 0x30",  /* clwb (%%rax) */
 		X86_FEATURE_CLWB)
 		: [p] "+m" (*p)
 		: [pax] "a" (p));
 }
 
-#define nop() asm volatile ("nop")
+#define nop() asm volatile (KSPECEM_NO_RESTART "nop")
 
 static inline void serialize(void)
 {

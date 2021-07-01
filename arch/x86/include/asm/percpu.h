@@ -106,14 +106,16 @@ do {									\
 		pto_tmp__ = (_val);					\
 		(void)pto_tmp__;					\
 	}								\
-	asm qual(__pcpu_op2_##size(op, "%[val]", __percpu_arg([var]))	\
+	kspecem_hook_store((void*)&(_var));				\
+	asm qual(KSPECEM_NO_RESTART __pcpu_op2_##size(op, "%[val]", __percpu_arg([var]))	\
 	    : [var] "+m" (_var)						\
 	    : [val] __pcpu_reg_imm_##size(pto_val__));			\
 } while (0)
 
 #define percpu_unary_op(size, qual, op, _var)				\
 ({									\
-	asm qual (__pcpu_op1_##size(op, __percpu_arg([var]))		\
+	kspecem_hook_store((void*)&(_var));				\
+	asm qual (KSPECEM_NO_RESTART __pcpu_op1_##size(op, __percpu_arg([var]))		\
 	    : [var] "+m" (_var));					\
 })
 
@@ -142,7 +144,7 @@ do {									\
 #define percpu_from_op(size, qual, op, _var)				\
 ({									\
 	__pcpu_type_##size pfo_val__;					\
-	asm qual (__pcpu_op2_##size(op, __percpu_arg([var]), "%[val]")	\
+	asm qual (KSPECEM_NO_RESTART __pcpu_op2_##size(op, __percpu_arg([var]), "%[val]")	\
 	    : [val] __pcpu_reg_##size("=", pfo_val__)			\
 	    : [var] "m" (_var));					\
 	(typeof(_var))(unsigned long) pfo_val__;			\
@@ -151,7 +153,7 @@ do {									\
 #define percpu_stable_op(size, op, _var)				\
 ({									\
 	__pcpu_type_##size pfo_val__;					\
-	asm(__pcpu_op2_##size(op, __percpu_arg(P[var]), "%[val]")	\
+	asm(KSPECEM_NO_RESTART __pcpu_op2_##size(op, __percpu_arg(P[var]), "%[val]")	\
 	    : [val] __pcpu_reg_##size("=", pfo_val__)			\
 	    : [var] "p" (&(_var)));					\
 	(typeof(_var))(unsigned long) pfo_val__;			\
@@ -163,7 +165,8 @@ do {									\
 #define percpu_add_return_op(size, qual, _var, _val)			\
 ({									\
 	__pcpu_type_##size paro_tmp__ = __pcpu_cast_##size(_val);	\
-	asm qual (__pcpu_op2_##size("xadd", "%[tmp]",			\
+	kspecem_hook_store((void*)&(_var));				\
+	asm qual (KSPECEM_NO_RESTART __pcpu_op2_##size("xadd", "%[tmp]",			\
 				     __percpu_arg([var]))		\
 		  : [tmp] __pcpu_reg_##size("+", paro_tmp__),		\
 		    [var] "+m" (_var)					\
@@ -180,7 +183,8 @@ do {									\
 ({									\
 	__pcpu_type_##size pxo_old__;					\
 	__pcpu_type_##size pxo_new__ = __pcpu_cast_##size(_nval);	\
-	asm qual (__pcpu_op2_##size("mov", __percpu_arg([var]),		\
+	kspecem_hook_store((void*)&(_var));				\
+	asm qual (KSPECEM_NO_RESTART __pcpu_op2_##size("mov", __percpu_arg([var]),		\
 				    "%[oval]")				\
 		  "\n1:\t"						\
 		  __pcpu_op2_##size("cmpxchg", "%[nval]",		\
@@ -201,7 +205,8 @@ do {									\
 ({									\
 	__pcpu_type_##size pco_old__ = __pcpu_cast_##size(_oval);	\
 	__pcpu_type_##size pco_new__ = __pcpu_cast_##size(_nval);	\
-	asm qual (__pcpu_op2_##size("cmpxchg", "%[nval]",		\
+	kspecem_hook_store((void*)&(_var));				\
+	asm qual (KSPECEM_NO_RESTART __pcpu_op2_##size("cmpxchg", "%[nval]",		\
 				    __percpu_arg([var]))		\
 		  : [oval] "+a" (pco_old__),				\
 		    [var] "+m" (_var)					\
@@ -373,7 +378,7 @@ static inline bool x86_this_cpu_variable_test_bit(int nr,
 {
 	bool oldbit;
 
-	asm volatile("btl "__percpu_arg(2)",%1"
+	asm volatile(KSPECEM_NO_RESTART "btl "__percpu_arg(2)",%1"
 			CC_SET(c)
 			: CC_OUT(c) (oldbit)
 			: "m" (*(unsigned long __percpu *)addr), "Ir" (nr));

@@ -50,7 +50,8 @@ static __always_inline void arch_atomic_set(atomic_t *v, int i)
  */
 static __always_inline void arch_atomic_add(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "addl %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "addl %1,%0"
 		     : "+m" (v->counter)
 		     : "ir" (i) : "memory");
 }
@@ -64,7 +65,8 @@ static __always_inline void arch_atomic_add(int i, atomic_t *v)
  */
 static __always_inline void arch_atomic_sub(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "subl %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "subl %1,%0"
 		     : "+m" (v->counter)
 		     : "ir" (i) : "memory");
 }
@@ -80,7 +82,8 @@ static __always_inline void arch_atomic_sub(int i, atomic_t *v)
  */
 static __always_inline bool arch_atomic_sub_and_test(int i, atomic_t *v)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX "subl", v->counter, e, "er", i);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "subl", v->counter, e, "er", i);
 }
 #define arch_atomic_sub_and_test arch_atomic_sub_and_test
 
@@ -92,7 +95,8 @@ static __always_inline bool arch_atomic_sub_and_test(int i, atomic_t *v)
  */
 static __always_inline void arch_atomic_inc(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "incl %0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "incl %0"
 		     : "+m" (v->counter) :: "memory");
 }
 #define arch_atomic_inc arch_atomic_inc
@@ -105,7 +109,8 @@ static __always_inline void arch_atomic_inc(atomic_t *v)
  */
 static __always_inline void arch_atomic_dec(atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "decl %0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "decl %0"
 		     : "+m" (v->counter) :: "memory");
 }
 #define arch_atomic_dec arch_atomic_dec
@@ -120,7 +125,8 @@ static __always_inline void arch_atomic_dec(atomic_t *v)
  */
 static __always_inline bool arch_atomic_dec_and_test(atomic_t *v)
 {
-	return GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, e);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_UNARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "decl", v->counter, e);
 }
 #define arch_atomic_dec_and_test arch_atomic_dec_and_test
 
@@ -134,7 +140,8 @@ static __always_inline bool arch_atomic_dec_and_test(atomic_t *v)
  */
 static __always_inline bool arch_atomic_inc_and_test(atomic_t *v)
 {
-	return GEN_UNARY_RMWcc(LOCK_PREFIX "incl", v->counter, e);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_UNARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "incl", v->counter, e);
 }
 #define arch_atomic_inc_and_test arch_atomic_inc_and_test
 
@@ -149,7 +156,8 @@ static __always_inline bool arch_atomic_inc_and_test(atomic_t *v)
  */
 static __always_inline bool arch_atomic_add_negative(int i, atomic_t *v)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX "addl", v->counter, s, "er", i);
+	kspecem_hook_store((void*)&v->counter);
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX "addl", v->counter, s, "er", i);
 }
 #define arch_atomic_add_negative arch_atomic_add_negative
 
@@ -211,7 +219,8 @@ static __always_inline int arch_atomic_xchg(atomic_t *v, int new)
 
 static __always_inline void arch_atomic_and(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "andl %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "andl %1,%0"
 			: "+m" (v->counter)
 			: "ir" (i)
 			: "memory");
@@ -229,7 +238,8 @@ static __always_inline int arch_atomic_fetch_and(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_or(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "orl %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "orl %1,%0"
 			: "+m" (v->counter)
 			: "ir" (i)
 			: "memory");
@@ -247,7 +257,8 @@ static __always_inline int arch_atomic_fetch_or(int i, atomic_t *v)
 
 static __always_inline void arch_atomic_xor(int i, atomic_t *v)
 {
-	asm volatile(LOCK_PREFIX "xorl %1,%0"
+	kspecem_hook_store((void*)&v->counter);
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "xorl %1,%0"
 			: "+m" (v->counter)
 			: "ir" (i)
 			: "memory");

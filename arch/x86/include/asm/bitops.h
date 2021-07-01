@@ -51,13 +51,14 @@
 static __always_inline void
 arch_set_bit(long nr, volatile unsigned long *addr)
 {
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "orb %b1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "orb %b1,%0"
 			: CONST_MASK_ADDR(nr, addr)
 			: "iq" (CONST_MASK(nr))
 			: "memory");
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(bts) " %1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(bts) " %1,%0"
 			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
 	}
 }
@@ -65,18 +66,20 @@ arch_set_bit(long nr, volatile unsigned long *addr)
 static __always_inline void
 arch___set_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(bts) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(bts) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
 }
 
 static __always_inline void
 arch_clear_bit(long nr, volatile unsigned long *addr)
 {
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "andb %b1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "andb %b1,%0"
 			: CONST_MASK_ADDR(nr, addr)
 			: "iq" (~CONST_MASK(nr)));
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btr) " %1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(btr) " %1,%0"
 			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
 	}
 }
@@ -91,14 +94,16 @@ arch_clear_bit_unlock(long nr, volatile unsigned long *addr)
 static __always_inline void
 arch___clear_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(btr) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(btr) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
 }
 
 static __always_inline bool
 arch_clear_bit_unlock_is_negative_byte(long nr, volatile unsigned long *addr)
 {
 	bool negative;
-	asm volatile(LOCK_PREFIX "andb %2,%1"
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "andb %2,%1"
 		CC_SET(s)
 		: CC_OUT(s) (negative), WBYTE_ADDR(addr)
 		: "ir" ((char) ~(1 << nr)) : "memory");
@@ -116,18 +121,20 @@ arch___clear_bit_unlock(long nr, volatile unsigned long *addr)
 static __always_inline void
 arch___change_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile(__ASM_SIZE(btc) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(btc) " %1,%0" : : ADDR, "Ir" (nr) : "memory");
 }
 
 static __always_inline void
 arch_change_bit(long nr, volatile unsigned long *addr)
 {
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
 	if (__builtin_constant_p(nr)) {
-		asm volatile(LOCK_PREFIX "xorb %b1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX "xorb %b1,%0"
 			: CONST_MASK_ADDR(nr, addr)
 			: "iq" (CONST_MASK(nr)));
 	} else {
-		asm volatile(LOCK_PREFIX __ASM_SIZE(btc) " %1,%0"
+		asm volatile(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(btc) " %1,%0"
 			: : RLONG_ADDR(addr), "Ir" (nr) : "memory");
 	}
 }
@@ -135,7 +142,8 @@ arch_change_bit(long nr, volatile unsigned long *addr)
 static __always_inline bool
 arch_test_and_set_bit(long nr, volatile unsigned long *addr)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX __ASM_SIZE(bts), *addr, c, "Ir", nr);
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(bts), *addr, c, "Ir", nr);
 }
 
 static __always_inline bool
@@ -149,7 +157,8 @@ arch___test_and_set_bit(long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm(__ASM_SIZE(bts) " %2,%1"
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm(KSPECEM_NO_RESTART __ASM_SIZE(bts) " %2,%1"
 	    CC_SET(c)
 	    : CC_OUT(c) (oldbit)
 	    : ADDR, "Ir" (nr) : "memory");
@@ -159,7 +168,8 @@ arch___test_and_set_bit(long nr, volatile unsigned long *addr)
 static __always_inline bool
 arch_test_and_clear_bit(long nr, volatile unsigned long *addr)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX __ASM_SIZE(btr), *addr, c, "Ir", nr);
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(btr), *addr, c, "Ir", nr);
 }
 
 /*
@@ -175,7 +185,8 @@ arch___test_and_clear_bit(long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm volatile(__ASM_SIZE(btr) " %2,%1"
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(btr) " %2,%1"
 		     CC_SET(c)
 		     : CC_OUT(c) (oldbit)
 		     : ADDR, "Ir" (nr) : "memory");
@@ -187,7 +198,8 @@ arch___test_and_change_bit(long nr, volatile unsigned long *addr)
 {
 	bool oldbit;
 
-	asm volatile(__ASM_SIZE(btc) " %2,%1"
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(btc) " %2,%1"
 		     CC_SET(c)
 		     : CC_OUT(c) (oldbit)
 		     : ADDR, "Ir" (nr) : "memory");
@@ -198,7 +210,8 @@ arch___test_and_change_bit(long nr, volatile unsigned long *addr)
 static __always_inline bool
 arch_test_and_change_bit(long nr, volatile unsigned long *addr)
 {
-	return GEN_BINARY_RMWcc(LOCK_PREFIX __ASM_SIZE(btc), *addr, c, "Ir", nr);
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	return GEN_BINARY_RMWcc(KSPECEM_NO_RESTART LOCK_PREFIX __ASM_SIZE(btc), *addr, c, "Ir", nr);
 }
 
 static __always_inline bool constant_test_bit(long nr, const volatile unsigned long *addr)
@@ -211,7 +224,8 @@ static __always_inline bool variable_test_bit(long nr, volatile const unsigned l
 {
 	bool oldbit;
 
-	asm volatile(__ASM_SIZE(bt) " %2,%1"
+	kspecem_hook_store((void*)(addr) + ((nr)>>3));
+	asm volatile(KSPECEM_NO_RESTART __ASM_SIZE(bt) " %2,%1"
 		     CC_SET(c)
 		     : CC_OUT(c) (oldbit)
 		     : "m" (*(unsigned long *)addr), "Ir" (nr) : "memory");
@@ -232,7 +246,7 @@ static __always_inline bool variable_test_bit(long nr, volatile const unsigned l
  */
 static __always_inline unsigned long __ffs(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
+	asm(KSPECEM_NO_RESTART "rep; bsf %1,%0"
 		: "=r" (word)
 		: "rm" (word));
 	return word;
@@ -246,7 +260,7 @@ static __always_inline unsigned long __ffs(unsigned long word)
  */
 static __always_inline unsigned long ffz(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
+	asm(KSPECEM_NO_RESTART "rep; bsf %1,%0"
 		: "=r" (word)
 		: "r" (~word));
 	return word;
@@ -260,7 +274,7 @@ static __always_inline unsigned long ffz(unsigned long word)
  */
 static __always_inline unsigned long __fls(unsigned long word)
 {
-	asm("bsr %1,%0"
+	asm(KSPECEM_NO_RESTART "bsr %1,%0"
 	    : "=r" (word)
 	    : "rm" (word));
 	return word;
@@ -294,15 +308,15 @@ static __always_inline int ffs(int x)
 	 * We cannot do this on 32 bits because at the very least some
 	 * 486 CPUs did not behave this way.
 	 */
-	asm("bsfl %1,%0"
+	asm(KSPECEM_NO_RESTART "bsfl %1,%0"
 	    : "=r" (r)
 	    : "rm" (x), "0" (-1));
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsfl %1,%0\n\t"
+	asm(KSPECEM_NO_RESTART "bsfl %1,%0\n\t"
 	    "cmovzl %2,%0"
 	    : "=&r" (r) : "rm" (x), "r" (-1));
 #else
-	asm("bsfl %1,%0\n\t"
+	asm(KSPECEM_NO_RESTART "bsfl %1,%0\n\t"
 	    "jnz 1f\n\t"
 	    "movl $-1,%0\n"
 	    "1:" : "=r" (r) : "rm" (x));
@@ -335,15 +349,15 @@ static __always_inline int fls(unsigned int x)
 	 * We cannot do this on 32 bits because at the very least some
 	 * 486 CPUs did not behave this way.
 	 */
-	asm("bsrl %1,%0"
+	asm(KSPECEM_NO_RESTART "bsrl %1,%0"
 	    : "=r" (r)
 	    : "rm" (x), "0" (-1));
 #elif defined(CONFIG_X86_CMOV)
-	asm("bsrl %1,%0\n\t"
+	asm(KSPECEM_NO_RESTART "bsrl %1,%0\n\t"
 	    "cmovzl %2,%0"
 	    : "=&r" (r) : "rm" (x), "rm" (-1));
 #else
-	asm("bsrl %1,%0\n\t"
+	asm(KSPECEM_NO_RESTART "bsrl %1,%0\n\t"
 	    "jnz 1f\n\t"
 	    "movl $-1,%0\n"
 	    "1:" : "=r" (r) : "rm" (x));
@@ -371,7 +385,7 @@ static __always_inline int fls64(__u64 x)
 	 * dest reg is undefined if x==0, but their CPU architect says its
 	 * value is written to set it to the same as before.
 	 */
-	asm("bsrq %1,%q0"
+	asm(KSPECEM_NO_RESTART "bsrq %1,%q0"
 	    : "+r" (bitpos)
 	    : "rm" (x));
 	return bitpos + 1;

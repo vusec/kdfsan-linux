@@ -82,6 +82,7 @@ static inline unsigned long load_unaligned_zeropad(const void *addr)
 	unsigned long ret, dummy;
 
 	asm(
+		KSPECEM_NO_RESTART
 		"1:\tmov %2,%0\n"
 		"2:\n"
 		".section .fixup,\"ax\"\n"

@@ -741,7 +741,8 @@ extern char			ignore_fpu_irq;
  */
 static inline void prefetch(const void *x)
 {
-	alternative_input(BASE_PREFETCH, "prefetchnta %P1",
+	alternative_input(KSPECEM_NO_RESTART BASE_PREFETCH,
+			  KSPECEM_NO_RESTART "prefetchnta %P1",
 			  X86_FEATURE_XMM,
 			  "m" (*(const char *)x));
 }
@@ -753,7 +754,8 @@ static inline void prefetch(const void *x)
  */
 static __always_inline void prefetchw(const void *x)
 {
-	alternative_input(BASE_PREFETCH, "prefetchw %P1",
+	alternative_input(KSPECEM_NO_RESTART BASE_PREFETCH,
+			  KSPECEM_NO_RESTART "prefetchw %P1",
 			  X86_FEATURE_3DNOWPREFETCH,
 			  "m" (*(const char *)x));
 }

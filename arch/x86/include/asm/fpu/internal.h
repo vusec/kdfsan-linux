@@ -109,6 +109,7 @@ extern void fpstate_sanitize_xstate(struct fpu *fpu);
 									\
 	might_fault();							\
 									\
+	/* kspecem: yes restart (stac) */				\
 	asm volatile(ASM_STAC "\n"					\
 		     "1:" #insn "\n\t"					\
 		     "2: " ASM_CLAC "\n"				\
@@ -159,6 +160,8 @@ static inline int copy_fxregs_to_user(struct fxregs_state __user *fx)
 
 static inline void copy_kernel_to_fxregs(struct fxregs_state *fx)
 {
+	/* kspecem: yes restart (because we probably don't correctly restore
+	 * the fpu regs on a restart) */
 	if (IS_ENABLED(CONFIG_X86_32))
 		kernel_insn(fxrstor %[fx], "=m" (*fx), [fx] "m" (*fx));
 	else
@@ -198,10 +201,11 @@ static inline int copy_user_to_fregs(struct fregs_state __user *fx)
 
 static inline void copy_fxregs_to_kernel(struct fpu *fpu)
 {
+	kspecem_hook_memcpy((char*)&fpu->state.fxsave, sizeof(fpu->state.fxsave));
 	if (IS_ENABLED(CONFIG_X86_32))
-		asm volatile( "fxsave %[fx]" : [fx] "=m" (fpu->state.fxsave));
+		asm volatile(KSPECEM_NO_RESTART "fxsave %[fx]" : [fx] "=m" (fpu->state.fxsave));
 	else
-		asm volatile("fxsaveq %[fx]" : [fx] "=m" (fpu->state.fxsave));
+		asm volatile(KSPECEM_NO_RESTART "fxsaveq %[fx]" : [fx] "=m" (fpu->state.fxsave));
 }
 
 /* These macros all use (%edi)/(%rdi) as the single memory argument. */

@@ -336,7 +336,7 @@ do {									\
 } while (0)
 
 #define __get_user_asm(x, addr, itype, ltype, label)			\
-	asm_volatile_goto("\n"						\
+	asm_volatile_goto(KSPECEM_NO_RESTART "\n"			\
 		     "1:	mov"itype" %[umem],%[output]\n"		\
 		     _ASM_EXTABLE_UA(1b, %l2)				\
 		     : [output] ltype(x)				\
@@ -399,7 +399,7 @@ do {									\
 } while (0)
 
 #define __get_user_asm(x, addr, err, itype, ltype)			\
-	asm volatile("\n"						\
+	asm volatile(KSPECEM_NO_RESTART "\n"				\
 		     "1:	mov"itype" %[umem],%[output]\n"		\
 		     "2:\n"						\
 		     ".section .fixup,\"ax\"\n"				\

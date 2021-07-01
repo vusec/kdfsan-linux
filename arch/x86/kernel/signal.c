@@ -56,7 +56,7 @@
 static void force_valid_ss(struct pt_regs *regs)
 {
 	u32 ar;
-	asm volatile ("lar %[old_ss], %[ar]\n\t"
+	asm volatile (KSPECEM_NO_RESTART "lar %[old_ss], %[ar]\n\t"
 		      "jz 1f\n\t"		/* If invalid: */
 		      "xorl %[ar], %[ar]\n\t"	/* set ar = 0 */
 		      "1:"

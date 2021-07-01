@@ -90,7 +90,7 @@ static __always_inline unsigned long long __rdmsr(unsigned int msr)
 {
 	DECLARE_ARGS(val, low, high);
 
-	asm volatile("1: rdmsr\n"
+	asm volatile(KSPECEM_NO_RESTART "1: rdmsr\n"
 		     "2:\n"
 		     _ASM_EXTABLE_HANDLE(1b, 2b, ex_handler_rdmsr_unsafe)
 		     : EAX_EDX_RET(val, low, high) : "c" (msr));
@@ -200,7 +200,7 @@ static __always_inline unsigned long long rdtsc(void)
 {
 	DECLARE_ARGS(val, low, high);
 
-	asm volatile("rdtsc" : EAX_EDX_RET(val, low, high));
+	asm volatile(KSPECEM_NO_RESTART "rdtsc" : EAX_EDX_RET(val, low, high));
 
 	return EAX_EDX_VAL(val, low, high);
 }
@@ -231,7 +231,7 @@ static __always_inline unsigned long long rdtsc_ordered(void)
 	 * Thus, use the preferred barrier on the respective CPU, aiming for
 	 * RDTSCP as the default.
 	 */
-	asm volatile(ALTERNATIVE_2("rdtsc",
+	asm volatile(ALTERNATIVE_2(KSPECEM_NO_RESTART "rdtsc",
 				   "lfence; rdtsc", X86_FEATURE_LFENCE_RDTSC,
 				   "rdtscp", X86_FEATURE_RDTSCP)
 			: EAX_EDX_RET(val, low, high)
@@ -245,7 +245,7 @@ static inline unsigned long long native_read_pmc(int counter)
 {
 	DECLARE_ARGS(val, low, high);
 
-	asm volatile("rdpmc" : EAX_EDX_RET(val, low, high) : "c" (counter));
+	asm volatile(KSPECEM_NO_RESTART "rdpmc" : EAX_EDX_RET(val, low, high) : "c" (counter));
 	if (tracepoint_enabled(rdpmc))
 		do_trace_rdpmc(counter, EAX_EDX_VAL(val, low, high), 0);
 	return EAX_EDX_VAL(val, low, high);
