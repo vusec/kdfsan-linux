@@ -259,13 +259,12 @@ dfsan_label kdf_get_label_count(void) {
   return label_list->last_label;
 }
 
-/**** Internals relevant to ltckpt/kasan/kdf-pf-checker/etc. ****/
+/**** Misc. internals ****/
 
 // CONCAT_* macros used (slightly differently) in kdfinit/kdfinit_taint.c
-// Uses strlcat defined with ltckpt static lib because it doesn't have ltckpt store hooks, and the info string needs to persist after a restart
 #define NUM_STR_LEN 30
-#define CONCAT_STR(S) do { ltckpt_strlcat(dest, S, count); } while(0)
-#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); ltckpt_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
+#define CONCAT_STR(S) do { kdf_util_strlcat(dest, S, count); } while(0)
+#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); kdf_util_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
 void kdf_copy_label_info(dfsan_label label, char * dest, size_t count) {
   u8 *b = label_list->bitvectors[label].b;
   bool first_report = true;
