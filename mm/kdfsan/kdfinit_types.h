@@ -7,7 +7,7 @@
 #include <linux/memory.h>
 #include <linux/nmi.h>
 #include <linux/kallsyms.h>
-#include "kdfsan_ltckpt.h"
+#include "kdfsan_util.h"
 
 // TODO: properly merge kdfinit/kdfsan
 dfsan_label kdf_union(dfsan_label l1, dfsan_label l2); // THIS SHOULD ONLY BE CALLED IF WITHIN KDFSAN RT

@@ -4,7 +4,7 @@
 bool kdfinit_is_init_done = false; // should be false! this is correctly initialized in kdfinit_init!
 bool kdfinit_is_in_rt = false; // should be false! this is correctly initialized in kdfinit_init!
 static void set_kdfinit_rt(void) { kdfinit_is_in_rt = true; } static void unset_kdfinit_rt(void) { kdfinit_is_in_rt = false; } // Check for whether kdfinit rt is being called from a function called by kdfinit rt
-#define CHECK_WHITELIST(default_ret) do { if(!ltckpt_hook_is_whitelist_task()) { return default_ret; } } while(0)
+#define CHECK_WHITELIST(default_ret) do { if(!kdf_util_hook_is_whitelist_task()) { return default_ret; } } while(0)
 #define CHECK_KDFINIT_RT(default_ret) do { if(!kdfinit_is_init_done || kdfinit_is_in_rt) { return default_ret; } } while(0)
 #define ENTER_KDFINIT_RT(default_ret) \
     unsigned long __irq_flags; \
@@ -51,10 +51,9 @@ static dfsan_label secret_unknown_label = -1;
 // For KDFSan tests
 dfsan_label kdfinit_get_usercopy_label(void) { return attacker_usercopy_label; }
 
-// Uses strlcat defined with ltckpt static lib because it doesn't have ltckpt store hooks, and the info string needs to persist after a restart
 #define NUM_STR_LEN 30
-#define CONCAT_STR(S) do { ltckpt_strlcat(dest, S, count); } while(0)
-#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); ltckpt_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
+#define CONCAT_STR(S) do { kdf_util_strlcat(dest, S, count); } while(0)
+#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); kdf_util_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
 static void init_desc(u16 syscall_nr, u8 syscall_arg_nr, size_t size, u64 syscall_arg_val, char * dest, size_t count) {
   u64 this_cumulative_arg_count = cumulative_arg_count; cumulative_arg_count++;
   CONCAT_STR("total_arg_nr: "); CONCAT_NUM(this_cumulative_arg_count,10);
@@ -66,7 +65,7 @@ static void init_desc(u16 syscall_nr, u8 syscall_arg_nr, size_t size, u64 syscal
 
 void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num) {
   ENTER_KDFINIT_RT();
-  u16 syscall_nr = ltckpt_syscall_get_nr();
+  u16 syscall_nr = kdf_util_syscall_get_nr();
 
   u64 arg_val = 0;
   if(s == 1) { arg_val = (u64)(*(u8*)arg); }

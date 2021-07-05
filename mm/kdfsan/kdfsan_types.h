@@ -14,7 +14,7 @@
 #include <linux/memblock.h>
 #include <linux/uaccess.h>
 #include <asm/cpu_entry_area.h>
-#include "kdfsan_ltckpt.h"
+#include "kdfsan_util.h"
 
 // TODO: properly merge kdfinit/kdfsan
 dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label);

@@ -1,17 +1,14 @@
-#ifndef CONFIG_LTCKPT
-
 #include "kdfsan_types.h"
 
 /********/
-// Helpers
 
-static size_t ltckpt_strlen(const char *s) {
+static size_t kdf_util_strlen(const char *s) {
   const char *sc;
   for (sc = s; *sc != '\0'; ++sc) { ; }
   return sc - s;
 }
 
-static int ltckpt_strncmp(const char *cs, const char *ct, int count) {
+static int kdf_util_strncmp(const char *cs, const char *ct, int count) {
   unsigned char c1, c2;
   while (count) {
     c1 = *cs++;
@@ -27,8 +24,7 @@ static int ltckpt_strncmp(const char *cs, const char *ct, int count) {
   return 0;
 }
 
-// Using https://www.geeksforgeeks.org/implement-itoa/
-static void ltckpt_reverse_str(char str[], int length) {
+static void kdf_util_reverse_str(char str[], int length) {
   int start = 0;
   int end = length -1;
   while (start < end) {
@@ -43,27 +39,27 @@ static void ltckpt_reverse_str(char str[], int length) {
 /********/
 
 // TODO: Fix this (right now it assumes syscall-number whitelisting AND task-name whitelisting)
-int ltckpt_hook_is_whitelist_task(void) {
-  unsigned long syscall_nr = ltckpt_syscall_get_nr();
+int kdf_util_hook_is_whitelist_task(void) {
+  unsigned long syscall_nr = kdf_util_syscall_get_nr();
   char *task_name = current->comm;
   if ((syscall_nr >= 600 && syscall_nr < 1200) ||
-      ltckpt_strncmp(task_name, "kdfsan_task", ltckpt_strlen("kdfsan_task")) == 0 ||
-      ltckpt_strncmp(task_name, "syz-executor", ltckpt_strlen("syz-executor")) == 0) {
+      kdf_util_strncmp(task_name, "kdfsan_task", kdf_util_strlen("kdfsan_task")) == 0 ||
+      kdf_util_strncmp(task_name, "syz-executor", kdf_util_strlen("syz-executor")) == 0) {
     return 1;
   }
   return 0;
 }
 
 // TODO: Test this
-noinline unsigned long ltckpt_syscall_get_nr(void) {
+noinline unsigned long kdf_util_syscall_get_nr(void) {
   unsigned long __ptr = (unsigned long)(current->stack);
   __ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
   return (((struct pt_regs *)__ptr) - 1)->orig_ax;
 }
 
-size_t ltckpt_strlcat(char *dest, const char *src, size_t count) {
-  size_t dsize = ltckpt_strlen(dest);
-  size_t len = ltckpt_strlen(src);
+size_t kdf_util_strlcat(char *dest, const char *src, size_t count) {
+  size_t dsize = kdf_util_strlen(dest);
+  size_t len = kdf_util_strlen(src);
   size_t res = dsize + len;
   BUG_ON(dsize < count); // This would be a bug
   dest += dsize;
@@ -74,7 +70,7 @@ size_t ltckpt_strlcat(char *dest, const char *src, size_t count) {
   return res;
 }
 
-char* ltckpt_itoa(long long num, char* str, int base) {
+char* kdf_util_itoa(long long num, char* str, int base) {
   int i = 0;
   bool is_negative = false;
   if (num == 0) {
@@ -93,8 +89,6 @@ char* ltckpt_itoa(long long num, char* str, int base) {
   }
   if (is_negative) { str[i++] = '-'; }
   str[i] = '\0';
-  ltckpt_reverse_str(str, i);
+  kdf_util_reverse_str(str, i);
   return str;
 }
-
-#endif
