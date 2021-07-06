@@ -128,7 +128,19 @@ static char *my_strcpy(char *dst, const char* src) {
 static bool kdf_dbgfs_run_tests = false;
 static bool kdf_dbgfs_run_kocher_tests = false;
 u8 kdf_dbgfs_syscall_label_type = KDF_SYSCALL_LABEL_DEFAULT;
+bool kdf_dbgfs_run_specfuzz_policies = false;
+bool kdf_dbgfs_run_spectaint_policies = false;
+bool kdf_dbgfs_report_only_pht_syscall_cc = false;
 bool report_smotherspectre = true;
+
+static void kdf_check_policies(void) {
+  int i = 0;
+  if (kdf_dbgfs_run_specfuzz_policies) i++;
+  if (kdf_dbgfs_run_spectaint_policies) i++;
+  if (kdf_dbgfs_report_only_pht_syscall_cc) i++;
+  if (i >= 1) report_smotherspectre = false; // only report smotherspectre gadget with default policies
+  if (i > 1) panic("KDFSan ERROR: Only one policy should be set at most!\n");
+}
 
 /********/
 
@@ -140,6 +152,8 @@ void kdfinit_init(void);
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
+  printk("KDFSan: Checking policies...\n");
+  kdf_check_policies();
   printk("KDFSan: Enabling...\n");
   kdf_init_finished();
   printk("KDFSan: Initializing custom tainting policies...\n");

@@ -51,6 +51,7 @@ static dfsan_label secret_user_label = -1;
 static dfsan_label secret_null_label = -1;
 static dfsan_label secret_global_label = -1;
 static dfsan_label secret_unknown_label = -1;
+static dfsan_label secret_safe_label = -1;
 
 /***************/
 /**** Utils ****/
@@ -171,31 +172,145 @@ void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
   LEAVE_KDFINIT_RT();
 }
 
-static __always_inline bool kdfinit_label_also_has_controllable_read_label(dfsan_label label) {
-  if(dfsan_has_label(label, secret_slab_label) || dfsan_has_label(label, secret_stack_label) ||
-        dfsan_has_label(label, secret_wild_label) || dfsan_has_label(label, secret_user_label) ||
-        dfsan_has_label(label, secret_null_label) || dfsan_has_label(label, secret_global_label) ||
-        dfsan_has_label(label, secret_unknown_label)) {
-    KDF_PANIC_ON(label == secret_slab_label || label == secret_stack_label || label == secret_wild_label ||
-          label == secret_user_label || label == secret_null_label || label == secret_global_label || label == secret_unknown_label,
-          "KDFInit error: ptr_label contains a secret label but _only_ contains that label; something is wrong (otherwise, what is it controllable by?)\n");
-    return true;
+/******************************/
+/* Taint policies:
+(1) Kasper (default)
+  - Sources: SYSCALL, LVI, MASSAGING, "attacker-->secret" policies
+  - Sinks: MDS, CC
+(2) Kasper restricted to PHT-SYSCALL-CC (kdf_dbgfs_report_only_pht_syscall_cc)
+  - Sources: only SYSCALL and "attacker-->secret" policies
+  - Sinks: MDS (no LVI/MASSAGING), CC
+(3) SpecTaint (kdf_dbgfs_run_spectaint_policies)
+  - Sources: only SYSCALL policy and modified "attacker-->secret" policy (so that label is promoted for _every_ access within spec exec)
+  - Sinks: MDS (for *all* attacker-tainted accesses *in spec exec*), CC
+(4) SpecFuzz (kdf_dbgfs_run_specfuzz_policies)
+  - Sources: none
+  - Sinks: MDS (if OOB)
+** TODO: When calculating FPs for SpecFuzz's 'accesses', compare against Kasper-PHT-SYSCALL-CC's 'accesses' PLUS 'leaks' because all
+'leaks' which Kasper reports could be counted as 'accesses' (but Kasper conservatively only reports them as 'leaks').
+*/
+
+/******************************/
+/**** Taint sources: loads ****/
+
+static dfsan_label kdfinit_load_source_default(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  kdfinit_access_enum access_type = kdfinit_access_type(addr, size);
+  // 'Attacker' label --> 'secret' label
+  if(kdfinit_util_has_attacker_massage_label(ptr_label) || kdfinit_util_has_attacker_lvi_label(ptr_label) ||
+        (kdfinit_is_kasan_bug(addr, size) && ptr_label != 0 && !kdfinit_is_nullmem_access(addr))) {
+    return kdfinit_util_get_secret_type(access_type);
   }
-  return false;
+  // Memory-massaging
+  else if(kdfinit_is_oob_uaf_bug(addr, size) && ptr_label == 0) {
+    return kdfinit_util_get_massage_type(access_type);
+  }
+  // LVI
+  else if(kdfinit_is_wild_bug(addr, size) && ptr_label == 0 && !kdfinit_is_nullmem_access(addr)) {
+    return kdfinit_util_get_lvi_type(access_type);
+  }
+  return 0;
+}
+
+static dfsan_label kdfinit_load_source_kaspersyscallcc(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  kdfinit_access_enum access_type = kdfinit_access_type(addr, size);
+  // 'Attacker' label --> 'secret' label
+  if(kdfinit_is_kasan_bug(addr, size) && ptr_label != 0 && !kdfinit_is_nullmem_access(addr)) {
+    return kdfinit_util_get_secret_type(access_type);
+  }
+  return 0;
+}
+
+static dfsan_label kdfinit_load_source_spectaint(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  kdfinit_access_enum access_type = kdfinit_access_type(addr, size);
+  // 'Attacker' label --> 'secret' label
+  if(ptr_label != 0 && kspecem_in_speculative_emulation) {
+    if(kdfinit_is_kasan_bug(addr, size) && !kdfinit_is_nullmem_access(addr)) return kdfinit_util_get_secret_type(access_type); // If _unsafe_ access, apply correct 'secret-*' label
+    else return secret_safe_label;// If _safe_ (i.e., in-bounds) access, apply 'secret-safe' label
+  }
+  return 0;
+}
+
+// Use same taint sources as Kasper so that we can evaluate how many of its FPs are due to the "leak" instruction not dereferencing a 'secret'
+static dfsan_label kdfinit_load_source_specfuzz(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  kdfinit_access_enum access_type = kdfinit_access_type(addr, size);
+  // 'Attacker' label --> 'secret' label
+  if(kdfinit_is_kasan_bug(addr, size) && ptr_label != 0 && !kdfinit_is_nullmem_access(addr)) {
+    return kdfinit_util_get_secret_type(access_type);
+  }
+  return 0;
+}
+
+// Called from within kdfsan runtime lib -- so DON'T call kdfsan_interface functions from here
+dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  ENTER_KDFINIT_RT(0);
+  dfsan_label policy_label = 0;
+  if (kdf_dbgfs_report_only_pht_syscall_cc) policy_label = kdfinit_load_source_kaspersyscallcc(addr, size, ip, data_label, ptr_label);
+  else if (kdf_dbgfs_run_spectaint_policies) policy_label = kdfinit_load_source_spectaint(addr, size, ip, data_label, ptr_label);
+  else if (kdf_dbgfs_run_specfuzz_policies) policy_label = kdfinit_load_source_specfuzz(addr, size, ip, data_label, ptr_label);
+  else policy_label = kdfinit_load_source_default(addr, size, ip, data_label, ptr_label);
+  LEAVE_KDFINIT_RT();
+  return policy_label;
+}
+
+/*******************************/
+/**** Taint sinks: accesses ****/
+
+static void kdfinit_access_sink_default(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
+  // CC report
+  if(kdfinit_util_has_secret_label(ptr_label)) {
+    kspecem_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
+  // MDS report
+  else if(kdfinit_util_has_attacker_massage_label(ptr_label) || kdfinit_util_has_attacker_lvi_label(ptr_label) ||
+            (kdfinit_is_kasan_bug(addr, size) && ptr_label != 0 && !kdfinit_is_nullmem_access(addr))) {
+    kspecem_hook_ridl_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
+}
+
+static void kdfinit_access_sink_kaspersyscallcc(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
+  // CC report
+  if(kdfinit_util_has_secret_label(ptr_label)) {
+    kspecem_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
+  // MDS report (no LVI/MASSAGING)
+  else if(kdfinit_is_kasan_bug(addr, size) && ptr_label != 0 && !kdfinit_is_nullmem_access(addr)) {
+    kspecem_hook_ridl_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
+}
+
+static void kdfinit_access_sink_spectaint(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
+  // CC report
+  if(kdfinit_util_has_secret_label(ptr_label) || dfsan_has_label(ptr_label, secret_safe_label)) {
+    kspecem_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
+}
+
+static void kdfinit_access_sink_specfuzz(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
+  // CC report (if OOB)
+  if(kdfinit_is_kasan_bug(addr, size)) {
+    kspecem_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  }
 }
 
 // Called from outside kdfsan runtime lib -- so DO call kdfsan_interface functions from here
 void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
   ENTER_KDFINIT_RT();
-  // SpectreV1 report
-  if(kdfinit_label_also_has_controllable_read_label(ptr_label)) {
-    kspecem_hook_specv1_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
-  }
-  // RIDL report
-  else if(dfsan_has_label(ptr_label, attacker_slab_massage_label) || dfsan_has_label(ptr_label, attacker_stack_massage_label) ||
-            dfsan_has_label(ptr_label, attacker_wild_lvi_label) || dfsan_has_label(ptr_label, attacker_user_lvi_label) ||
-            (kdfinit_is_kasan_bug(addr, size) && ptr_label != 0)) {
-    kspecem_hook_ridl_report((unsigned long) addr, size, is_write, ip, data_label, ptr_label);
+  if (kdf_dbgfs_report_only_pht_syscall_cc) kdfinit_access_sink_kaspersyscallcc(addr, size, ip, data_label, ptr_label, is_write);
+  else if (kdf_dbgfs_run_spectaint_policies) kdfinit_access_sink_spectaint(addr, size, ip, data_label, ptr_label, is_write);
+  else if (kdf_dbgfs_run_specfuzz_policies) kdfinit_access_sink_specfuzz(addr, size, ip, data_label, ptr_label, is_write);
+  else kdfinit_access_sink_default(addr, size, ip, data_label, ptr_label, is_write);
+  LEAVE_KDFINIT_RT();
+}
+
+/*******************************/
+/**** Taint sinks: branches ****/
+
+// Called from outside kdfsan runtime lib -- so DO call kdfsan_interface functions from here
+void kdfinit_branch_sink(unsigned long ip, dfsan_label label) {
+  if(label == 0 || !report_smotherspectre) return;
+  ENTER_KDFINIT_RT();
+  if(kdfinit_util_has_secret_label(label)) {
+    kspecem_hook_smotherspectre_report(ip, label);
   }
   LEAVE_KDFINIT_RT();
 }
@@ -223,6 +338,7 @@ void kdfinit_init(void) {
   secret_null_label = dfsan_create_label("secret-null-mem", 0);
   secret_global_label = dfsan_create_label("secret-global-mem", 0);
   secret_unknown_label = dfsan_create_label("secret-unknown-mem", 0);
+  secret_safe_label = dfsan_create_label("secret-safe", 0); // Only used by SpecTaint policies to check its FPs
 
   if (kdf_dbgfs_syscall_label_type == KDF_SYSCALL_LABEL_GENERIC)
     attacker_syscall_label = dfsan_create_label("attacker-syscall-arg", 0);
