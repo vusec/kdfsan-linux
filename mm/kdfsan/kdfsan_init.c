@@ -31,7 +31,7 @@ static void __init kdf_record_future_shadow_range(void *start, void *end) {
 }
 
 /* Allocate metadata for pages allocated at boot time. */
-void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
+static void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
   u64 addr, size;
   struct page *page;
   void *shadow;
@@ -81,26 +81,8 @@ static void __init kdf_initialize_shadow(void) {
 
 /********/
 
-bool kdf_to_run_tests = false;
-
-extern bool kdf_is_init_done; // should be false;
-extern bool kdf_is_in_rt; // should be false;
-extern dfsan_label __dfsan_arg_tls[64]; // should be { 0 }
-extern dfsan_label __dfsan_retval_tls; // should be 0
-void __init kdf_preinit_data(void) {
-  // Global variables are statically initialized to a non-zero value to keep them in the data section
-  // This function sets them to the initial values they are actually supposed to be
-  // This is a hack; there's probably a better way of zero-initializing kernel data
-  kdf_is_init_done = false;
-  kdf_is_in_rt = false;
-  __memset(__dfsan_arg_tls, 0, 64*sizeof(__dfsan_arg_tls[0]));
-  __dfsan_retval_tls = 0;
-}
-
 void __init kdfsan_init_shadow(void) {
   kdf_initialize_shadow();
-  kdf_preinit_data();
-  kdf_preinit_internal_data();
 }
 EXPORT_SYMBOL(kdfsan_init_shadow);
 
@@ -108,7 +90,7 @@ EXPORT_SYMBOL(kdfsan_init_shadow);
 
 // Warning: SUPER janky code to get the tests to work with task whitelisting
 
-char *my_strcpy(char *dst, const char* src) {
+static char *my_strcpy(char *dst, const char* src) {
   u32 i;
   for (i=0; src[i] != '\0'; ++i) { dst[i] = src[i]; }
   dst[i]= '\0';
@@ -128,6 +110,8 @@ char *my_strcpy(char *dst, const char* src) {
 void kdf_run_base_tests(bool is_first_run);
 void kdf_run_policies_tests(void);
 void kdfinit_init(void);
+
+static bool kdf_to_run_tests = false;
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;

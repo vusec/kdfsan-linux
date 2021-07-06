@@ -1,8 +1,8 @@
 #include "kdfinit_types.h"
 #include "kdfinit_kasan_util.h"
 
-bool kdfinit_is_init_done = false; // should be false! this is correctly initialized in kdfinit_init!
-bool kdfinit_is_in_rt = false; // should be false! this is correctly initialized in kdfinit_init!
+bool kdfinit_is_init_done = false;
+bool kdfinit_is_in_rt = false;
 static void set_kdfinit_rt(void) { kdfinit_is_in_rt = true; } static void unset_kdfinit_rt(void) { kdfinit_is_in_rt = false; } // Check for whether kdfinit rt is being called from a function called by kdfinit rt
 #define CHECK_WHITELIST(default_ret) do { if(!kdf_util_hook_is_whitelist_task()) { return default_ret; } } while(0)
 #define CHECK_KDFINIT_RT(default_ret) do { if(!kdfinit_is_init_done || kdfinit_is_in_rt) { return default_ret; } } while(0)

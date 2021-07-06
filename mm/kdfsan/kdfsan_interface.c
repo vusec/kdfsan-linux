@@ -2,13 +2,13 @@
 #include "kdfsan_internal.h"
 #include "kdfsan_interface.h"
 
-dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }! this is correctly initialized in kdfsan_init_data()!
-dfsan_label __dfsan_retval_tls = -1; // should be 0! this is correctly initialized in kdfsan_init_data()!
+dfsan_label __dfsan_arg_tls[64] = { 0 };
+dfsan_label __dfsan_retval_tls = 0;
 
 /**** Checks for whether shadow mem can be accessed ****/
 
-bool kdf_is_init_done = -1; // should be false! this is correctly initialized in kdfsan_init_data()!
-bool kdf_is_in_rt = -1; // should be false! this is correctly initialized in kdfsan_init_data()!
+bool kdf_is_init_done = false;
+bool kdf_is_in_rt = false;
 
 // Set after init routine
 void kdf_init_finished(void) { kdf_is_init_done = true; }

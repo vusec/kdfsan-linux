@@ -14,26 +14,24 @@ typedef struct {
   dfsan_label last_label;
   dfsan_label_bitvector bitvectors[NUM_LABELS];
 } dfsan_label_list;
+static dfsan_label_list* label_list = NULL;
 
-// These should be NULL! They are correctly initialized in kdf_preinit_internal_data
-dfsan_label_list* label_list = (void*) -1;
-
-// Because stack allocs caused issues; these should probably have mutexes too...
-u8* b_tmp_kdf_union = (void*) -1;
-char* str_kdf_print_bitvector = (void*) -1;
+// TODO: These should probably have mutexes...
+static u8* b_tmp_kdf_union = NULL;
+static char* str_kdf_print_bitvector = NULL;
 
 // An actual label within label_list (i.e., not just "NUM_LABELS - 1") to be returned when attempting to create a new label when no more labels are available
-dfsan_label max_label = -1;
+static dfsan_label max_label = -1;
 
 /**** Helpers: string ****/
 
-size_t my_strlen(const char *s) {
+static size_t my_strlen(const char *s) {
   const char *sc;
   for (sc = s; *sc != '\0'; ++sc) ;
   return sc - s;
 }
 
-size_t my_strlcpy(char *dest, const char *src, size_t size) {
+static size_t my_strlcpy(char *dest, const char *src, size_t size) {
   size_t ret = my_strlen(src);
   if (size) {
     size_t len = (ret >= size) ? size - 1 : ret;
@@ -43,7 +41,7 @@ size_t my_strlcpy(char *dest, const char *src, size_t size) {
   return ret;
 }
 
-int my_memcmp (const void *cs, const void *ct, size_t count) {
+static int my_memcmp (const void *cs, const void *ct, size_t count) {
   const unsigned char *su1, *su2;
   int res = 0;
   for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
@@ -52,7 +50,7 @@ int my_memcmp (const void *cs, const void *ct, size_t count) {
   return res;
 }
 
-int my_strcmp(const char *cs, const char *ct) {
+static int my_strcmp(const char *cs, const char *ct) {
   unsigned char c1, c2;
   while (1) {
     c1 = *cs++;
@@ -67,7 +65,7 @@ int my_strcmp(const char *cs, const char *ct) {
 
 /**** Helpers: util ****/
 
-void kdf_print_bitvector(dfsan_label lbl) {
+static void kdf_print_bitvector(dfsan_label lbl) {
   KDF_CHECK_LABEL(lbl);
   u8 *b = label_list->bitvectors[lbl].b;
 
@@ -108,12 +106,6 @@ static dfsan_label kdf_create_next_label(u8 *b, const char *desc) {
 }
 
 /**** Helpers: init ****/
-
-void __init kdf_preinit_internal_data(void) {
-  label_list = NULL;
-  b_tmp_kdf_union = NULL;
-  str_kdf_print_bitvector = NULL;
-}
 
 void kdf_init_internal_data(void) {
   size_t size = sizeof(dfsan_label_list);

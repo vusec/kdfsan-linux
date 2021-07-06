@@ -19,7 +19,6 @@ dfsan_label kdf_union(dfsan_label l1, dfsan_label l2);
 void kdf_print_label_info(dfsan_label lbl, const bool line_cont);
 void kdf_copy_label_info(dfsan_label label, char * dest, size_t count);
 
-void __init kdf_preinit_internal_data(void);
 void kdf_init_internal_data(void);
 
 #endif // KDFSAN_INTERNAL_H
