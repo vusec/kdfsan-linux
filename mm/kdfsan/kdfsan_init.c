@@ -81,8 +81,23 @@ static void __init kdf_initialize_shadow(void) {
 
 /********/
 
+extern bool kdf_is_init_done; // should be false;
+extern bool kdf_is_in_rt; // should be false;
+extern dfsan_label __dfsan_arg_tls[64]; // should be { 0 }
+extern dfsan_label __dfsan_retval_tls; // should be 0
+static void __init kdf_preinit_data(void) {
+  // Global variables are statically initialized to a non-zero value to keep them in the data section
+  // This function sets them to the initial values they are actually supposed to be
+  // This is a hack; there's probably a better way of zero-initializing kernel data
+  kdf_is_init_done = false;
+  kdf_is_in_rt = false;
+  __memset(__dfsan_arg_tls, 0, 64*sizeof(__dfsan_arg_tls[0]));
+  __dfsan_retval_tls = 0;
+}
+
 void __init kdfsan_init_shadow(void) {
   kdf_initialize_shadow();
+  kdf_preinit_data();
 }
 EXPORT_SYMBOL(kdfsan_init_shadow);
 
@@ -111,7 +126,7 @@ void kdf_run_base_tests(bool is_first_run);
 void kdf_run_policies_tests(void);
 void kdfinit_init(void);
 
-static bool kdf_to_run_tests = false;
+bool kdf_dbgfs_run_tests = false;
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
@@ -119,12 +134,12 @@ int kdfsan_enable(void *data, u64 *val) {
   kdf_init_finished();
   printk("KDFSan: Initializing custom tainting policies...\n");
   kdfinit_init();
-  if (kdf_to_run_tests) {
+  if (kdf_dbgfs_run_tests) {
     printk("KDFSan: Running KDFSan base tests...\n");
     ini=get_cycles(); kdf_run_base_tests(true); end=get_cycles();
     printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed)", (end-ini)/1000000);
   }
-  if (kdf_to_run_tests) {
+  if (kdf_dbgfs_run_tests) {
     SET_WHITELIST_TASK();
     printk("KDFSan: Re-running KDFSan base tests...\n");
     ini=get_cycles(); kdf_run_base_tests(false); end=get_cycles();
@@ -148,7 +163,7 @@ int __init kdfsan_init(void) {
   printk("KDFSan: Initializing debugfs...\n");
   kdfsan_dir  = debugfs_create_dir("kdfsan", NULL);
   debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
-  debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_to_run_tests);
+  debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
   printk("KDFSan: Initialization done.\n");
   return 0;
 }
