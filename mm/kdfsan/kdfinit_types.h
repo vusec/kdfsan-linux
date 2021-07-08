@@ -9,6 +9,8 @@
 #include <linux/kallsyms.h>
 #include "kdfsan_util.h"
 
+extern bool kdf_dbgfs_generic_syscall_label;
+
 // TODO: properly merge kdfinit/kdfsan
 dfsan_label kdf_union(dfsan_label l1, dfsan_label l2); // THIS SHOULD ONLY BE CALLED IF WITHIN KDFSAN RT
 int kdf_has_label(dfsan_label haver, dfsan_label havee);  // THIS SHOULD ONLY BE CALLED IF WITHIN KDFSAN RT

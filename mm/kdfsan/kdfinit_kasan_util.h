@@ -139,20 +139,20 @@ static __always_inline bool kdf_kasan_memory_is_poisoned(unsigned long addr, siz
 }
 
 static __always_inline bool kdf_kasan_addr_has_shadow(const void * addr) {
-	return (addr >= kasan_shadow_to_mem((void *)KASAN_SHADOW_START));
+  return addr >= kasan_shadow_to_mem((void *)KASAN_SHADOW_START);
 }
 
 // "Wild bug" == wild-mem-access or user-mem-access or null-ptr-deref
-static __always_inline bool kdfinit_is_wild_access(const void * addr, size_t size) {
-  return (size != 0 && !kdf_kasan_addr_has_shadow(addr));
+static __always_inline bool kdfinit_is_wild_bug(const void * addr, size_t size) {
+  return size != 0 && !kdf_kasan_addr_has_shadow(addr);
 }
 
 static __always_inline bool kdfinit_is_oob_uaf_bug(const void * addr, size_t size) {
-  return (size != 0 && !kdfinit_is_wild_access(addr, size) && kdf_kasan_memory_is_poisoned((unsigned long)addr, size));
+  return size != 0 && !kdfinit_is_wild_bug(addr, size) && kdf_kasan_memory_is_poisoned((unsigned long)addr, size);
 }
 
 static __always_inline bool kdfinit_is_kasan_bug(const void * addr, size_t size) {
-  return (kdfinit_is_wild_access(addr, size) || kdfinit_is_oob_uaf_bug(addr, size));
+  return kdfinit_is_wild_bug(addr, size) || kdfinit_is_oob_uaf_bug(addr, size);
 }
 
 // Copied mostly from get_shadow_bug_type in mm/kasan/report.c
@@ -192,22 +192,22 @@ static __always_inline kdfinit_access_enum kdfinit_kasan_shadow_access_type(cons
 }
 
 static __always_inline bool kdfinit_is_nullmem_access(const void * addr, size_t size) {
-  return (kdfinit_is_wild_access(addr, size) && (unsigned long) addr < PAGE_SIZE);
+  return kdfinit_is_wild_bug(addr, size) && (unsigned long) addr < PAGE_SIZE;
 }
 
 static __always_inline bool kdfinit_is_usermem_access(const void * addr, size_t size) {
-  return (kdfinit_is_wild_access(addr, size) && (unsigned long) addr >= PAGE_SIZE && (unsigned long) addr < TASK_SIZE);
+  return kdfinit_is_wild_bug(addr, size) && (unsigned long) addr >= PAGE_SIZE && (unsigned long) addr < TASK_SIZE;
 }
 
 static __always_inline bool kdfinit_is_wildmem_access(const void * addr, size_t size) {
-  return (kdfinit_is_wild_access(addr, size) && (unsigned long) addr >= TASK_SIZE);
+  return kdfinit_is_wild_bug(addr, size) && (unsigned long) addr >= TASK_SIZE;
 }
 
 static __always_inline bool kdfinit_is_datamem_access(const void * addr, size_t size) {
-  return (size != 0 && (
+  return size != 0 && (
       (addr >= (const void *)__start_rodata && addr < (const void *)__end_rodata) ||
       (addr >= (const void *)_sdata         && addr < (const void *)_edata) ||
-      (addr >= (const void *)__bss_start    && addr < (const void *)__bss_stop)));
+      (addr >= (const void *)__bss_start    && addr < (const void *)__bss_stop));
 }
 
 static __always_inline bool kdfinit_is_stackmem_access(const void * addr, size_t size) {

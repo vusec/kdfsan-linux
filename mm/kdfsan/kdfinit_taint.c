@@ -35,18 +35,11 @@ static void set_kdfinit_rt(void) { kdfinit_is_in_rt = true; } static void unset_
     } while(0)
 
 static u64 cumulative_arg_count = -1;
+static dfsan_label attacker_syscall_label = -1;
 static dfsan_label attacker_usercopy_label = -1;
-static dfsan_label attacker_slab_massage_label = -1;
-static dfsan_label attacker_stack_massage_label = -1;
-static dfsan_label attacker_wild_lvi_label = -1;
-static dfsan_label attacker_user_lvi_label = -1;
-static dfsan_label secret_slab_label = -1;
-static dfsan_label secret_stack_label = -1;
-static dfsan_label secret_wild_label = -1;
-static dfsan_label secret_user_label = -1;
-static dfsan_label secret_null_label = -1;
-static dfsan_label secret_global_label = -1;
-static dfsan_label secret_unknown_label = -1;
+
+/***************/
+/**** Utils ****/
 
 // For KDFSan tests
 dfsan_label kdfinit_get_usercopy_label(void) { return attacker_usercopy_label; }
@@ -63,21 +56,28 @@ static void init_desc(u16 syscall_nr, u8 syscall_arg_nr, size_t size, u64 syscal
   CONCAT_STR(", syscall_arg_val: 0x"); CONCAT_NUM(syscall_arg_val,16);
 }
 
+/********************************************/
+/**** Taint sources: syscalls/usercopies ****/
+
 void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num) {
   ENTER_KDFINIT_RT();
-  u16 syscall_nr = kdf_util_syscall_get_nr();
+  if (kdf_dbgfs_generic_syscall_label) {
+    dfsan_add_label(attacker_syscall_label, arg, s);
+  } else {
+    u16 syscall_nr = kdf_util_syscall_get_nr();
 
-  u64 arg_val = 0;
-  if(s == 1) { arg_val = (u64)(*(u8*)arg); }
-  else if(s == 2) { arg_val = (u64)(*(u16*)arg); }
-  else if(s == 4) { arg_val = (u64)(*(u32*)arg); }
-  else if(s == 8) { arg_val = (u64)(*(u64*)arg); }
-  else { } // TODO: panic?
+    u64 arg_val = 0;
+    if(s == 1) { arg_val = (u64)(*(u8*)arg); }
+    else if(s == 2) { arg_val = (u64)(*(u16*)arg); }
+    else if(s == 4) { arg_val = (u64)(*(u32*)arg); }
+    else if(s == 8) { arg_val = (u64)(*(u64*)arg); }
+    else { } // TODO: panic?
 
-  char desc[150];
-  init_desc(syscall_nr, arg_num, s, arg_val, desc, sizeof(desc));
-  dfsan_label label = dfsan_create_label(desc, 0);
-  dfsan_add_label(label, arg, s);
+    char desc[150] = "";
+    init_desc(syscall_nr, arg_num, s, arg_val, desc, sizeof(desc));
+    dfsan_label label = dfsan_create_label(desc, 0);
+    dfsan_add_label(label, arg, s);
+  }
   LEAVE_KDFINIT_RT();
 }
 
@@ -90,18 +90,19 @@ void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
   LEAVE_KDFINIT_RT();
 }
 
-static __always_inline bool kdfinit_label_also_has_controllable_read_label(dfsan_label label) {
-  if(dfsan_has_label(label, secret_slab_label) || dfsan_has_label(label, secret_stack_label) ||
-        dfsan_has_label(label, secret_wild_label) || dfsan_has_label(label, secret_user_label) ||
-        dfsan_has_label(label, secret_null_label) || dfsan_has_label(label, secret_global_label) ||
-        dfsan_has_label(label, secret_unknown_label)) {
-    KDF_PANIC_ON(label == secret_slab_label || label == secret_stack_label || label == secret_wild_label ||
-          label == secret_user_label || label == secret_null_label || label == secret_global_label || label == secret_unknown_label,
-          "KDFInit error: ptr_label contains a secret label but _only_ contains that label; something is wrong (otherwise, what is it controllable by?)\n");
-    return true;
-  }
-  return false;
+/******************************/
+/**** Taint sources: loads ****/
+
+// Called from within kdfsan runtime lib -- so DON'T call kdfsan_interface functions from here
+dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
+  //ENTER_KDFINIT_RT(0);
+  //LEAVE_KDFINIT_RT();
+  //return load_label;
+  return 0;
 }
+
+/*******************************/
+/**** Taint sinks: accesses ****/
 
 // Called from outside kdfsan runtime lib -- so DO call kdfsan_interface functions from here
 void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
@@ -109,60 +110,16 @@ void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip,
   //LEAVE_KDFINIT_RT();
 }
 
-// Called from within kdfsan runtime lib -- so DON'T call kdfsan_interface functions from here
-dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
-  ENTER_KDFINIT_RT(0);
-  dfsan_label load_label = 0;
-  kdfinit_access_enum access_type = kdfinit_access_type(addr, size);
-
-  if(kdf_has_label(ptr_label, attacker_slab_massage_label) || kdf_has_label(ptr_label, attacker_stack_massage_label) ||
-        kdf_has_label(ptr_label, attacker_wild_lvi_label) || kdf_has_label(ptr_label, attacker_user_lvi_label) ||
-        (kdfinit_is_kasan_bug(addr, size) && ptr_label != 0)) {
-    switch (access_type) {
-      case KDF_KASAN_SLAB_MEM: load_label = kdf_union(load_label, secret_slab_label); break;
-      case KDF_KASAN_STACK_MEM: load_label = kdf_union(load_label, secret_stack_label); break;
-      case KDF_KASAN_WILD_MEM: load_label = kdf_union(load_label, secret_wild_label); break;
-      case KDF_KASAN_USER_MEM: load_label = kdf_union(load_label, secret_user_label); break;
-      case KDF_KASAN_NULL_MEM: load_label = kdf_union(load_label, secret_null_label); break;
-      case KDF_KASAN_GLOBAL_MEM: load_label = kdf_union(load_label, secret_global_label); break;
-      default: load_label = kdf_union(load_label, secret_unknown_label); break;
-    }
-  }
-  else if(kdfinit_is_oob_uaf_bug(addr, size) && ptr_label == 0) {
-    switch (access_type) {
-      case KDF_KASAN_SLAB_MEM: load_label = kdf_union(load_label, attacker_slab_massage_label); break;
-      case KDF_KASAN_STACK_MEM: load_label = kdf_union(load_label, attacker_stack_massage_label); break;
-      default: break;
-    }
-  }
-  else if(kdfinit_is_wild_access(addr, size) && ptr_label == 0) {
-    switch (access_type) {
-      case KDF_KASAN_WILD_MEM: load_label = kdf_union(load_label, attacker_wild_lvi_label); break;
-      case KDF_KASAN_USER_MEM: load_label = kdf_union(load_label, attacker_user_lvi_label); break;
-      default: break;
-    }
-  }
-
-  LEAVE_KDFINIT_RT();
-  return load_label;
-}
+/**************/
+/**** Init ****/
 
 void kdfinit_init(void) {
   cumulative_arg_count = 0;
 
   // Init static labels
   attacker_usercopy_label = dfsan_create_label("attacker-usercopy", 0);
-  attacker_slab_massage_label = dfsan_create_label("attacker-slab-massage", 0);
-  attacker_stack_massage_label = dfsan_create_label("attacker-stack-massage", 0);
-  attacker_wild_lvi_label = dfsan_create_label("attacker-wild-mem-lvi", 0);
-  attacker_user_lvi_label = dfsan_create_label("attacker-user-mem-lvi", 0);
-  secret_slab_label = dfsan_create_label("secret-slab-mem", 0);
-  secret_stack_label = dfsan_create_label("secret-stack-mem", 0);
-  secret_wild_label = dfsan_create_label("secret-wild-mem", 0);
-  secret_user_label = dfsan_create_label("secret-user-mem", 0);
-  secret_null_label = dfsan_create_label("secret-null-mem", 0);
-  secret_global_label = dfsan_create_label("secret-global-mem", 0);
-  secret_unknown_label = dfsan_create_label("secret-unknown-mem", 0);
+
+  if (kdf_dbgfs_generic_syscall_label) attacker_syscall_label = dfsan_create_label("attacker-syscall-arg", 0);
 
   // Done
   kdfinit_is_in_rt = false;

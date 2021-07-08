@@ -123,10 +123,6 @@ struct mount_attr;
 #define __SC_ARGS(t, a)	a
 #define __SC_TEST(t, a) (void)BUILD_BUG_ON_ZERO(!__TYPE_IS_LL(t) && sizeof(t) > sizeof(long))
 
-#ifdef CONFIG_FTRACE_SYSCALLS
-#define __SC_STR_ADECL(t, a)	#a
-#define __SC_STR_TDECL(t, a)	#t
-
 #define __MAPN0(n,m,...)
 #define __MAPN1(n,m,t,a,...) m(t,a,n-1)
 #define __MAPN2(n,m,t,a,...) m(t,a,n-2), __MAPN1(n,m,__VA_ARGS__)
@@ -138,9 +134,13 @@ struct mount_attr;
 #ifdef CONFIG_KDFSAN
 #include <linux/kdfsan.h>
 #define __SC_KDF_TAINT(t,a,n) kdfinit_taint_syscall_arg((void*)&a,sizeof(t),n)
-#else /* CONFIG_KDFSAN */
-#define __SC_KDF_TAINT(t, a)
-#endif /* CONFIG_KDFSAN */
+#else
+#define __SC_KDF_TAINT(t,a,n)
+#endif
+
+#ifdef CONFIG_FTRACE_SYSCALLS
+#define __SC_STR_ADECL(t, a)	#a
+#define __SC_STR_TDECL(t, a)	#t
 
 extern struct trace_event_class event_class_syscall_enter;
 extern struct trace_event_class event_class_syscall_exit;
@@ -247,27 +247,6 @@ static inline int is_syscall_trace_event(struct trace_event_call *tp_event)
  * done within __do_sys_*().
  */
 #ifndef __SYSCALL_DEFINEx
-#ifdef CONFIG_KDFSAN
-#define __SYSCALL_DEFINEx(x, name, ...)					\
-	__diag_push();							\
-	__diag_ignore(GCC, 8, "-Wattribute-alias",			\
-		      "Type aliasing is used to sanitize syscall arguments");\
-	asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))	\
-		__attribute__((alias(__stringify(__se_sys##name))));	\
-	ALLOW_ERROR_INJECTION(sys##name, ERRNO);			\
-	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
-	asmlinkage long __se_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__));	\
-	asmlinkage long __se_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
-	{								\
-		__MAPN(x,__SC_KDF_TAINT,__VA_ARGS__); \
-		long ret = __do_sys##name(__MAP(x,__SC_CAST,__VA_ARGS__));\
-		__MAP(x,__SC_TEST,__VA_ARGS__);				\
-		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
-		return ret;						\
-	}								\
-	__diag_pop();							\
-	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))
-#else /* CONFIG_KDFSAN */
 #define __SYSCALL_DEFINEx(x, name, ...)					\
 	__diag_push();							\
 	__diag_ignore(GCC, 8, "-Wattribute-alias",			\
@@ -286,7 +265,6 @@ static inline int is_syscall_trace_event(struct trace_event_call *tp_event)
 	}								\
 	__diag_pop();							\
 	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))
-#endif /* CONFIG_KDFSAN */
 #endif /* __SYSCALL_DEFINEx */
 
 /* For split 64-bit arguments on 32-bit architectures */

@@ -127,6 +127,7 @@ void kdf_run_policies_tests(void);
 void kdfinit_init(void);
 
 bool kdf_dbgfs_run_tests = false;
+bool kdf_dbgfs_generic_syscall_label = false;
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
@@ -163,6 +164,8 @@ int __init kdfsan_init(void) {
   printk("KDFSan: Initializing debugfs...\n");
   kdfsan_dir  = debugfs_create_dir("kdfsan", NULL);
   debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
+  debugfs_create_bool("generic_syscall_label", 0666, kdfsan_dir,
+      &kdf_dbgfs_generic_syscall_label);
   debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
   printk("KDFSan: Initialization done.\n");
   return 0;
