@@ -38,23 +38,8 @@ static u64 cumulative_arg_count = -1;
 static dfsan_label attacker_syscall_label = -1;
 static dfsan_label attacker_usercopy_label = -1;
 
-/***************/
-/**** Utils ****/
-
 // For KDFSan tests
 dfsan_label kdfinit_get_usercopy_label(void) { return attacker_usercopy_label; }
-
-#define NUM_STR_LEN 30
-#define CONCAT_STR(S) do { kdf_util_strlcat(dest, S, count); } while(0)
-#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); kdf_util_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
-static void init_desc(u16 syscall_nr, u8 syscall_arg_nr, size_t size, u64 syscall_arg_val, char * dest, size_t count) {
-  u64 this_cumulative_arg_count = cumulative_arg_count; cumulative_arg_count++;
-  CONCAT_STR("total_arg_nr: "); CONCAT_NUM(this_cumulative_arg_count,10);
-  CONCAT_STR(", syscall_nr: "); CONCAT_NUM(syscall_nr,10);
-  CONCAT_STR(", syscall_arg_nr: "); CONCAT_NUM(syscall_arg_nr,10);
-  CONCAT_STR(", size: "); CONCAT_NUM(size,10);
-  CONCAT_STR(", syscall_arg_val: 0x"); CONCAT_NUM(syscall_arg_val,16);
-}
 
 /********************************************/
 /**** Taint sources: syscalls/usercopies ****/
@@ -74,7 +59,13 @@ void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num) {
     else { } // TODO: panic?
 
     char desc[150] = "";
-    init_desc(syscall_nr, arg_num, s, arg_val, desc, sizeof(desc));
+    u64 this_cumulative_arg_count = cumulative_arg_count; cumulative_arg_count++;
+    CONCAT_STR("total_arg_nr: ",desc,sizeof(desc)); CONCAT_NUM(this_cumulative_arg_count,10,desc,sizeof(desc));
+    CONCAT_STR(", syscall_nr: ",desc,sizeof(desc)); CONCAT_NUM(syscall_nr,10,desc,sizeof(desc));
+    CONCAT_STR(", syscall_arg_nr: ",desc,sizeof(desc)); CONCAT_NUM(arg_num,10,desc,sizeof(desc));
+    CONCAT_STR(", size: ",desc,sizeof(desc)); CONCAT_NUM(s,10,desc,sizeof(desc));
+    CONCAT_STR(", syscall_arg_val: 0x",desc,sizeof(desc)); CONCAT_NUM(arg_val,16,desc,sizeof(desc));
+
     dfsan_label label = dfsan_create_label(desc, 0);
     dfsan_add_label(label, arg, s);
   }
@@ -88,26 +79,6 @@ void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
   dfsan_label unioned_label = dfsan_union(attacker_usercopy_label, src_ptr_label);
   dfsan_add_label(unioned_label, dst, s);
   LEAVE_KDFINIT_RT();
-}
-
-/******************************/
-/**** Taint sources: loads ****/
-
-// Called from within kdfsan runtime lib -- so DON'T call kdfsan_interface functions from here
-dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label) {
-  //ENTER_KDFINIT_RT(0);
-  //LEAVE_KDFINIT_RT();
-  //return load_label;
-  return 0;
-}
-
-/*******************************/
-/**** Taint sinks: accesses ****/
-
-// Called from outside kdfsan runtime lib -- so DO call kdfsan_interface functions from here
-void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write) {
-  //ENTER_KDFINIT_RT();
-  //LEAVE_KDFINIT_RT();
 }
 
 /**************/

@@ -253,27 +253,21 @@ dfsan_label kdf_get_label_count(void) {
 
 /**** Misc. internals ****/
 
-// CONCAT_* macros used (slightly differently) in kdfinit/kdfinit_taint.c
-#define NUM_STR_LEN 30
-#define CONCAT_STR(S) do { kdf_util_strlcat(dest, S, count); } while(0)
-#define CONCAT_NUM(X,B) do { char _tmp_num_str[NUM_STR_LEN]; __memset(_tmp_num_str,0,NUM_STR_LEN); kdf_util_itoa(X, _tmp_num_str, B); CONCAT_STR(_tmp_num_str); } while(0)
 void kdf_copy_label_info(dfsan_label label, char * dest, size_t count) {
   u8 *b = label_list->bitvectors[label].b;
   bool first_report = true;
   __memset(dest, 0, count);
-  CONCAT_STR("label "); CONCAT_NUM(label, 10); CONCAT_STR(": {");
+  CONCAT_STR("label ", dest, count); CONCAT_NUM(label, 10, dest, count); CONCAT_STR(": {", dest, count);
   for(dfsan_label i = 0; i <= label_list->last_label; i++) {
     KDF_PANIC_ON(b[i] != 0 && b[i] != 1, "kdf_print_label_info error: bitvector values should only be 0 or 1");
     if(b[i] == 1) {
-      if(!first_report) {
-        CONCAT_STR(", ");
-      }
-      CONCAT_STR("(label: "); CONCAT_NUM(i, 10);
-      CONCAT_STR(", desc: '"); CONCAT_STR(label_list->bitvectors[i].desc);
-      CONCAT_STR("')");
+      if(!first_report) { CONCAT_STR(", ", dest, count); }
+      CONCAT_STR("(label: ", dest, count); CONCAT_NUM(i, 10, dest, count);
+      CONCAT_STR(", desc: '", dest, count); CONCAT_STR(label_list->bitvectors[i].desc, dest, count);
+      CONCAT_STR("')", dest, count);
       first_report = false;
     }
   }
-  CONCAT_STR("}");
+  CONCAT_STR("}", dest, count);
   KDF_PANIC_ON(first_report && label != 0, "kdf_copy_label_info error: a non-zero label should be composed of at least one bit");
 }
