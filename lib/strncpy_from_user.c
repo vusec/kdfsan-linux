@@ -148,7 +148,7 @@ static long strncpy_from_user_wrapped(char *dst, const char __user *src, long co
 long strncpy_from_user(char *dst, const char __user *src, long count) {
 	long retval = strncpy_from_user_wrapped(dst, src, count);
 	if(retval != -EFAULT)
-		kdfinit_taint_usercopy((void *) dst, retval, dfsan_get_label((long) src));
+		kdfsan_policy_usercopy((void *) dst, retval, dfsan_get_label((long) src));
 	return retval;
 }
 EXPORT_SYMBOL(strncpy_from_user);

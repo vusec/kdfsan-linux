@@ -133,7 +133,7 @@ struct mount_attr;
 #define __MAPN(n,...) __MAPN##n(n,__VA_ARGS__)
 #ifdef CONFIG_KDFSAN
 #include <linux/kdfsan.h>
-#define __SC_KDF_TAINT(t,a,n) kdfinit_taint_syscall_arg((void*)&a,sizeof(t),n)
+#define __SC_KDF_TAINT(t,a,n) kdfsan_policy_syscall_arg((void*)&a,sizeof(t),n)
 #else
 #define __SC_KDF_TAINT(t,a,n)
 #endif

@@ -57,7 +57,7 @@ static __always_inline __must_check unsigned long
 raw_copy_from_user(void *dst, const void __user *src, unsigned long size)
 {
 	int ret = raw_copy_from_user_wrapped(dst, src, size);
-	kdfinit_taint_usercopy(dst, size - ret, dfsan_get_label((long) src));
+	kdfsan_policy_usercopy(dst, size - ret, dfsan_get_label((long) src));
 	return ret;
 }
 

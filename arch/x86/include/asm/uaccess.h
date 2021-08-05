@@ -132,7 +132,7 @@ extern int __get_user_bad(void);
 			ASM_CALL_CONSTRAINT				\
 		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
 	(x) = (__force __typeof__(*(ptr))) __val_gu;			\
-	kdfinit_taint_usercopy((void *)&(x), sizeof(*(ptr)), dfsan_get_label((long) (ptr))); \
+	kdfsan_policy_usercopy((void *)&(x), sizeof(*(ptr)), dfsan_get_label((long) (ptr))); \
 	__builtin_expect(__ret_gu, 0);					\
 })
 

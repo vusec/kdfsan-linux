@@ -9,7 +9,7 @@ static dfsan_label attacker_syscall_label = -1;
 static dfsan_label attacker_usercopy_label = -1;
 
 // For KDFSan tests
-dfsan_label kdfinit_get_usercopy_label(void) { return attacker_usercopy_label; }
+dfsan_label kdf_policy_get_usercopy_label(void) { return attacker_usercopy_label; }
 
 // Taint source: syscall args
 void kdf_policy_syscall_arg(void * arg, size_t s, int arg_num) {
@@ -45,7 +45,7 @@ void kdf_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
   kdf_add_label(unioned_label, dst, s); // Not calling dfsan_add_label because we're in the run-time here
 }
 
-void kdfinit_init(void) {
+void kdf_policies_init(void) {
   cumulative_arg_count = 0;
   attacker_usercopy_label = dfsan_create_label("attacker-usercopy", 0);
   if (kdf_dbgfs_generic_syscall_label) attacker_syscall_label = dfsan_create_label("attacker-syscall-arg", 0);

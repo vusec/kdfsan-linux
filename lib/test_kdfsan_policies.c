@@ -3,8 +3,7 @@
 #include <linux/printk.h>
 #include <linux/mman.h>
 #include <linux/slab.h>
-
-dfsan_label kdfinit_get_usercopy_label(void);
+#include "../mm/kdfsan/kdfsan_policies.h"
 
 static bool kdf_tests_fail = false;
 
@@ -88,7 +87,7 @@ static void testpolicies_usercopy(void) {
   size_t size = 10;
   char data = 34;
   dfsan_label attacker_label = dfsan_create_label("test-a11", 0);
-  dfsan_label usercopy_label = kdfinit_get_usercopy_label();
+  dfsan_label usercopy_label = kdf_policy_get_usercopy_label();
   dfsan_label unioned_label = dfsan_union(attacker_label, usercopy_label);
   //printk("    KDFSan usercopy test: attacker_label = %d, usercopy_label = %d, unioned_label = %d\n", attacker_label, usercopy_label, unioned_label);
 

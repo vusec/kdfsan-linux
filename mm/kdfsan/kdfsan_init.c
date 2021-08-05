@@ -2,6 +2,7 @@
 #include "kdfsan_internal.h"
 #include "kdfsan_shadow.h"
 #include "kdfsan_init.h"
+#include "kdfsan_policies.h"
 
 #include <asm/cpu_entry_area.h>
 #include <asm/sections.h>
@@ -124,7 +125,6 @@ static char *my_strcpy(char *dst, const char* src) {
 
 void kdf_run_base_tests(bool is_first_run);
 void kdf_run_policies_tests(void);
-void kdfinit_init(void);
 
 bool kdf_dbgfs_run_tests = false;
 bool kdf_dbgfs_generic_syscall_label = false;
@@ -134,21 +134,16 @@ int kdfsan_enable(void *data, u64 *val) {
   printk("KDFSan: Enabling...\n");
   kdf_init_finished();
   printk("KDFSan: Initializing custom tainting policies...\n");
-  kdfinit_init();
+  kdf_policies_init();
   if (kdf_dbgfs_run_tests) {
     printk("KDFSan: Running KDFSan base tests...\n");
     ini=get_cycles(); kdf_run_base_tests(true); end=get_cycles();
     printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed)", (end-ini)/1000000);
-  }
-  if (kdf_dbgfs_run_tests) {
-    SET_WHITELIST_TASK();
-    printk("KDFSan: Re-running KDFSan base tests...\n");
-    ini=get_cycles(); kdf_run_base_tests(false); end=get_cycles();
-    printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed).\n", (end-ini)/1000000);
     printk("KDFSan: Running KDFSan policies tests...\n");
+    SET_WHITELIST_TASK();
     ini=get_cycles(); kdf_run_policies_tests(); end=get_cycles();
-    printk("KDFSan: KDFSan policies tests complete (%liM cycles elapsed)", (end-ini)/1000000);
     RESET_TASK();
+    printk("KDFSan: KDFSan policies tests complete (%liM cycles elapsed)", (end-ini)/1000000);
   }
   printk("KDFSan: Done.\n");
   return 0;

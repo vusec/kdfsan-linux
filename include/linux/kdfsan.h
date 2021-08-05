@@ -23,8 +23,8 @@ dfsan_label dfsan_get_label_count(void);
 dfsan_label dfsan_read_label(const void *addr, uptr size);
 dfsan_label dfsan_union(dfsan_label l1, dfsan_label l2);
 dfsan_label dfsan_get_label(long data);
-void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num);
-void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label);
+void kdfsan_policy_syscall_arg(void * arg, size_t s, int arg_num);
+void kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label);
 #else
 static inline int kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t flags, int node) { return 0; }
 static inline void kdfsan_free_page(struct page *page, unsigned int order) { }
@@ -40,8 +40,8 @@ static inline dfsan_label dfsan_get_label_count(void) { return 0; }
 static inline dfsan_label dfsan_read_label(const void *addr, uptr size) { return 0; }
 static inline dfsan_label dfsan_union(dfsan_label l1, dfsan_label l2) { return 0; }
 static inline dfsan_label dfsan_get_label(long data) { return 0; }
-static inline void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num) { }
-static inline void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) { }
+static inline void kdfsan_policy_syscall_arg(void * arg, size_t s, int arg_num) { }
+static inline void kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) { }
 #endif
 
 #endif /* LINUX_KDFSAN_H */

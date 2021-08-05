@@ -34,13 +34,17 @@ fun:kdfsan_init=discard
 fun:kdfsan_init_shadow=uninstrumented
 fun:kdfsan_init_shadow=discard
 
+# KDFSan policy interfaces
+fun:kdfsan_policy_syscall_arg=uninstrumented
+fun:kdfsan_policy_syscall_arg=discard
+fun:kdfsan_policy_usercopy=uninstrumented
+fun:kdfsan_policy_usercopy=discard
+fun:kdf_policy_get_usercopy_label=uninstrumented
+fun:kdf_policy_get_usercopy_label=discard
+
 # KDFSan wrappers
 fun:__dfsw_*=uninstrumented
 fun:__dfsw_*=discard
-
-# KDFInit runtime
-fun:kdfinit_*=uninstrumented
-fun:kdfinit_*=discard
 
 # KDFSan tests
 fun:kdf_run_base_tests=uninstrumented
