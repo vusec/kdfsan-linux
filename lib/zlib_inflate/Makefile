@@ -15,7 +15,6 @@
 #
 
 KASAN_SANITIZE        := n
-KDFSAN_SANITIZE       := n
 KCOV_INSTRUMENT       := n
 
 obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate.o

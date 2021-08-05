@@ -13,7 +13,8 @@ include $(srctree)/lib/vdso/Makefile
 KASAN_SANITIZE			:= n
 UBSAN_SANITIZE			:= n
 KCSAN_SANITIZE			:= n
-KDFSAN_SANITIZE			:= n
+KDFSAN_SANITIZE_vclock_gettime.o := n
+KDFSAN_SANITIZE_vgetcpu.o	:= n
 OBJECT_FILES_NON_STANDARD	:= y
 
 # Prevents link failures: __sanitizer_cov_trace_pc() is not linked in.
