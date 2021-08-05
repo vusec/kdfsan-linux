@@ -151,3 +151,20 @@ void noinline dfsan_copy_label_info(dfsan_label label, char * dest, size_t count
   kdf_copy_label_info(label, dest, count);
   LEAVE_RT();
 }
+
+//// TODO: Include these properly
+void kdf_policy_syscall_arg(void * arg, size_t s, int arg_num);
+void kdf_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label);
+////
+
+void kdfinit_taint_syscall_arg(void * arg, size_t s, int arg_num) {
+  ENTER_WHITELIST_RT();
+  kdf_policy_syscall_arg(arg, s, arg_num);
+  LEAVE_WHITELIST_RT();
+}
+
+void kdfinit_taint_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
+  ENTER_WHITELIST_RT();
+  kdf_policy_usercopy(dst, s, src_ptr_label);
+  LEAVE_WHITELIST_RT();
+}

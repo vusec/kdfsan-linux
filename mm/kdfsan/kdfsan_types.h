@@ -16,10 +16,6 @@
 #include <asm/cpu_entry_area.h>
 #include "kdfsan_util.h"
 
-// TODO: properly merge kdfinit/kdfsan
-dfsan_label kdfinit_load_taint_source(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label);
-void kdfinit_access_taint_sink(const void * addr, size_t size, unsigned long ip, dfsan_label data_label, dfsan_label ptr_label, bool is_write);
-
 #define KDF_PANIC_ON(cond, ...) \
 do { \
   if(cond) { \
