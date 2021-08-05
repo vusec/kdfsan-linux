@@ -55,20 +55,18 @@ void noinline __dfsan_vararg_wrapper(const char *fname) {
 
 /**** Callback interfaces inserted by pass ****/
 
-dfsan_label noinline __dfsan_load_callback(void *addr, uptr size, dfsan_label data_label, dfsan_label ptr_label) {
-  kdfinit_access_taint_sink(addr, size, _RET_IP_, data_label, ptr_label, false);
-  ENTER_RT(data_label);
-  KDF_CHECK_LABEL(data_label); KDF_CHECK_LABEL(ptr_label);
-  dfsan_label policy_label = kdfinit_load_taint_source(addr, size, _RET_IP_, data_label, ptr_label);
-  dfsan_label ret_label = kdf_union(data_label, policy_label);
-  LEAVE_RT();
-  return ret_label;
-}
+/* TODO: The KDFSAN pass _might_ need to be picky about which loads/stores to
+ * check, similar to how KASAN only instruments "interesting" loads/stores. At
+ * least for Kasper (where the KDFSAN pass runs after the KASAN pass), we only
+ * inserted load/store callbacks for the accesses which were hooked by KASAN.
+ * Otherwise, KDFSAN would instrument too many accesses, and result in a crash.
+ */
 
-dfsan_label noinline __dfsan_store_callback(void *addr, uptr size, dfsan_label data_label, dfsan_label ptr_label) {
-  kdfinit_access_taint_sink(addr, size, _RET_IP_, data_label, ptr_label, true);
-  return data_label;
-}
+/* Add noinline function attribute if/when this callback does something interesting */
+dfsan_label __dfsan_load_callback(void *addr, uptr size, dfsan_label data_label, dfsan_label ptr_label) { return data_label; }
+
+/* Add noinline function attribute if/when this callback does something interesting */
+void __dfsan_store_callback(void *addr, uptr size, dfsan_label data_label, dfsan_label ptr_label) { }
 
 void noinline __dfsan_mem_transfer_callback(void *dest, const void *src, uptr size) {
   if(size == 0) return;
@@ -77,7 +75,8 @@ void noinline __dfsan_mem_transfer_callback(void *dest, const void *src, uptr si
   LEAVE_RT();
 }
 
-void __dfsan_cmp_callback(dfsan_label combined_label) { /* Add noinline function attribute if/when this is eventually used */ }
+/* Add noinline function attribute if/when this callback does something interesting */
+void __dfsan_cmp_callback(dfsan_label combined_label) { }
 
 /**** Interfaces not inserted by pass ****/
 
