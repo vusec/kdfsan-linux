@@ -1,14 +1,29 @@
 #include "kdfsan_types.h"
 #include "kdfsan_internal.h"
 #include "kdfsan_interface.h"
+#include "kdfsan_mm.h"
 #include "kdfsan_policies.h"
 
-dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }! this is correctly initialized in kdf_preinit_data()!
-dfsan_label __dfsan_retval_tls = -1; // should be 0! this is correctly initialized in kdf_preinit_data()!
-bool kdf_is_init_done = -1; // should be false! this is correctly initialized in kdf_preinit_data()!
-bool kdf_is_in_rt = -1; // should be false! this is correctly initialized in kdf_preinit_data()!
+/************************************************************/
+/********************** Interface data **********************/
 
-/**** Checks for whether shadow mem can be accessed ****/
+dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }! this is correctly initialized elsewhere!
+dfsan_label __dfsan_retval_tls = -1; // should be 0! this is correctly initialized elsewhere!
+static bool kdf_is_init_done = -1; // should be false! this is correctly initialized elsewhere!
+static bool kdf_is_in_rt = -1; // should be false! this is correctly initialized elsewhere!
+
+void __init kdfsan_interface_preinit(void) {
+  // Global variables are statically initialized to a non-zero value to keep them in the data section
+  // This function sets them to the initial values they are actually supposed to be
+  // This is a hack; there's probably a better way of zero-initializing kernel data
+  kdf_is_init_done = false;
+  kdf_is_in_rt = false;
+  __memset(__dfsan_arg_tls, 0, 64*sizeof(__dfsan_arg_tls[0]));
+  __dfsan_retval_tls = 0;
+}
+
+/***********************************************************/
+/********* Enter/leave guards for run-time library *********/
 
 // Set after init routine
 void kdf_init_finished(void) { kdf_is_init_done = true; }
@@ -17,7 +32,52 @@ void kdf_init_finished(void) { kdf_is_init_done = true; }
 void set_rt(void) { kdf_is_in_rt = true; }
 void unset_rt(void) { kdf_is_in_rt = false; }
 
-/**** Interfaces inserted by pass ****/
+#define CHECK_RT(default_ret) do { if(!kdf_is_init_done || kdf_is_in_rt) { return default_ret; } } while(0)
+#define ENTER_RT(default_ret) \
+    unsigned long __irq_flags; \
+    do { \
+        CHECK_RT(default_ret); \
+        set_rt(); \
+        preempt_disable(); \
+        local_irq_save(__irq_flags); \
+        stop_nmi(); \
+    } while(0)
+#define LEAVE_RT() \
+    do { \
+        KDF_PANIC_ON(!irqs_disabled(), "KDFSan error! IRQs should be disabled within the runtime!"); \
+        restart_nmi(); \
+        local_irq_restore(__irq_flags); \
+        preempt_enable(); \
+        unset_rt(); \
+    } while(0)
+
+#define CHECK_ONLY_IN_RT(default_ret) do { if(kdf_is_in_rt) { return default_ret; } } while(0)
+#define ENTER_NOINIT_RT(default_ret) \
+  unsigned long __irq_flags; \
+	do { \
+        CHECK_ONLY_IN_RT(default_ret); \
+        set_rt(); \
+        preempt_disable(); \
+        local_irq_save(__irq_flags); \
+        stop_nmi(); \
+	} while(0)
+#define LEAVE_NOINIT_RT() LEAVE_RT()
+
+#define CHECK_WHITELIST(default_ret) do { if(!kdf_util_hook_is_whitelist_task()) { return default_ret; } } while(0)
+#define ENTER_WHITELIST_RT(default_ret) \
+    unsigned long __irq_flags; \
+    do { \
+        CHECK_RT(default_ret); \
+	CHECK_WHITELIST(default_ret); \
+        set_rt(); \
+        preempt_disable(); \
+        local_irq_save(__irq_flags); \
+        stop_nmi(); \
+    } while(0)
+#define LEAVE_WHITELIST_RT() LEAVE_RT()
+
+/***********************************************************/
+/*************** Interfaces inserted by pass ***************/
 
 dfsan_label noinline __dfsan_read_label(const void *addr, uptr size) {
   if (size == 0) return 0;
@@ -54,7 +114,8 @@ void noinline __dfsan_vararg_wrapper(const char *fname) {
   LEAVE_RT();
 }
 
-/**** Callback interfaces inserted by pass ****/
+/********************************************************************/
+/*************** Callback interfaces inserted by pass ***************/
 
 /* TODO: The KDFSAN pass _might_ need to be picky about which loads/stores to
  * check, similar to how KASAN only instruments "interesting" loads/stores. At
@@ -79,7 +140,8 @@ void noinline __dfsan_mem_transfer_callback(void *dest, const void *src, uptr si
 /* Add noinline function attribute if/when this callback does something interesting */
 void __dfsan_cmp_callback(dfsan_label combined_label) { }
 
-/**** Interfaces not inserted by pass ****/
+/***************************************************************/
+/*************** Interfaces not inserted by pass ***************/
 
 void noinline dfsan_add_label(dfsan_label label_src, void *addr, uptr size) {
   if(size == 0 || label_src == 0) return;
@@ -144,7 +206,30 @@ void noinline dfsan_mem_transfer_callback(void *dest, const void *src, uptr size
   __dfsan_mem_transfer_callback(dest, src, size);
 }
 
-/**** Misc. interfaces ****/
+/************************************************************/
+/*************** Memory management interfaces ***************/
+
+int kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
+  ENTER_NOINIT_RT(0);
+  int ret = kdf_alloc_page(page, order, orig_flags, node);
+  LEAVE_NOINIT_RT();
+  return ret;
+}
+
+void kdfsan_free_page(struct page *page, unsigned int order) {
+  ENTER_NOINIT_RT();
+  kdf_free_page(page, order);
+  LEAVE_NOINIT_RT();
+}
+
+void kdfsan_split_page(struct page *page, unsigned int order) {
+  ENTER_NOINIT_RT();
+  kdf_split_page(page, order);
+  LEAVE_NOINIT_RT();
+}
+
+/********************************************************/
+/*************** Miscellaneous interfaces ***************/
 
 void noinline dfsan_copy_label_info(dfsan_label label, char * dest, size_t count) {
   ENTER_RT();

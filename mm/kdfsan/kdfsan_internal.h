@@ -2,7 +2,6 @@
 #define KDFSAN_INTERNAL_H
 
 #include "kdfsan_types.h"
-#include "kdfsan_init.h"
 #include "kdfsan_shadow.h"
 
 void kdf_memtransfer(void *dest, const void *src, uptr count);

@@ -1,8 +1,8 @@
 #include "kdfsan_types.h"
 #include "kdfsan_internal.h"
 #include "kdfsan_shadow.h"
-#include "kdfsan_init.h"
 #include "kdfsan_policies.h"
+#include "kdfsan_interface.h"
 
 #include <asm/cpu_entry_area.h>
 #include <asm/sections.h>
@@ -83,25 +83,10 @@ static void __init kdf_initialize_shadow(void) {
   printk("KDFSan: Shadow initialized.\n");
 }
 
-extern bool kdf_is_init_done; // should be false;
-extern bool kdf_is_in_rt; // should be false;
-extern dfsan_label __dfsan_arg_tls[64]; // should be { 0 }
-extern dfsan_label __dfsan_retval_tls; // should be 0
-static void __init kdf_preinit_data(void) {
-  // Global variables are statically initialized to a non-zero value to keep them in the data section
-  // This function sets them to the initial values they are actually supposed to be
-  // This is a hack; there's probably a better way of zero-initializing kernel data
-  kdf_is_init_done = false;
-  kdf_is_in_rt = false;
-  __memset(__dfsan_arg_tls, 0, 64*sizeof(__dfsan_arg_tls[0]));
-  __dfsan_retval_tls = 0;
-}
-
 void __init kdfsan_init_shadow(void) {
   kdf_initialize_shadow();
-  kdf_preinit_data();
+  kdfsan_interface_preinit();
 }
-EXPORT_SYMBOL(kdfsan_init_shadow);
 
 /********************************************************************/
 /************************** Late boot init **************************/
@@ -109,7 +94,7 @@ EXPORT_SYMBOL(kdfsan_init_shadow);
 bool kdf_dbgfs_run_tests = false;
 bool kdf_dbgfs_generic_syscall_label = false;
 
-int kdfsan_enable(void *data, u64 *val);
+static int kdfsan_enable(void *data, u64 *val);
 DEFINE_DEBUGFS_ATTRIBUTE(kdfsan_enable_fops, kdfsan_enable, NULL, "%lld\n");
 
 int __init kdfsan_init(void) {
@@ -143,7 +128,7 @@ void kdf_run_policies_tests(void);
 #define RESET_TASK() \
   kdf_util_strlcpy(current->comm, _saved_str, TASK_COMM_LEN);
 
-int kdfsan_enable(void *data, u64 *val) {
+static int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
   printk("KDFSan: Enabling...\n");
   kdf_init_finished();
