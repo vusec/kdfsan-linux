@@ -29,8 +29,8 @@ void __init kdfsan_interface_preinit(void) {
 void kdf_init_finished(void) { kdf_is_init_done = true; }
 
 // Check for whether dfsan rt is being called from a function called by dfsan rt
-void set_rt(void) { kdf_is_in_rt = true; }
-void unset_rt(void) { kdf_is_in_rt = false; }
+static void set_rt(void) { kdf_is_in_rt = true; }
+static void unset_rt(void) { kdf_is_in_rt = false; }
 
 #define CHECK_RT(default_ret) do { if(!kdf_is_init_done || kdf_is_in_rt) { return default_ret; } } while(0)
 #define ENTER_RT(default_ret) \

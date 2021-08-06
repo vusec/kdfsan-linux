@@ -10,8 +10,6 @@
 // from outside of the non-pre-emptable state, at the risk of losing KDFSan coverage, i.e.,
 // because KDFSan would be disabled during an interrupt e.g., between set_rt() and preempt_disable()
 
-void set_rt(void);
-void unset_rt(void);
 void kdfsan_interface_preinit(void);
 void kdf_init_finished(void);
 
