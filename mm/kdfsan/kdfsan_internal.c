@@ -2,8 +2,6 @@
 #include "kdfsan_internal.h"
 #include "kdfsan_shadow.h"
 
-/**** Helpers: data ****/
-
 static const uptr DESC_LEN = 150UL;
 typedef struct {
   u8 b[NUM_LABELS]; // this represents one bit as an 8-bit word; obviously not efficient
@@ -23,7 +21,7 @@ static char* str_kdf_print_bitvector = NULL;
 // An actual label within label_list (i.e., not just "NUM_LABELS - 1") to be returned when attempting to create a new label when no more labels are available
 static dfsan_label max_label = -1;
 
-/**** Helpers: util ****/
+/**** Helpers ****/
 
 static void kdf_print_bitvector(dfsan_label lbl) {
   KDF_CHECK_LABEL(lbl);
@@ -64,8 +62,6 @@ static dfsan_label kdf_create_next_label(u8 *b, const char *desc) {
 
   return this_label;
 }
-
-/**** Helpers: init ****/
 
 void kdf_init_internal_data(void) {
   size_t size = sizeof(dfsan_label_list);

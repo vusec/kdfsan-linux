@@ -10,6 +10,9 @@
 #include <linux/memblock.h>
 #include <linux/debugfs.h>
 
+/*********************************************************************/
+/************************** Early boot init **************************/
+
 #define NUM_FUTURE_RANGES 128
 struct start_end_pair {
   void *start, *end;
@@ -80,8 +83,6 @@ static void __init kdf_initialize_shadow(void) {
   printk("KDFSan: Shadow initialized.\n");
 }
 
-/********/
-
 extern bool kdf_is_init_done; // should be false;
 extern bool kdf_is_in_rt; // should be false;
 extern dfsan_label __dfsan_arg_tls[64]; // should be { 0 }
@@ -102,25 +103,45 @@ void __init kdfsan_init_shadow(void) {
 }
 EXPORT_SYMBOL(kdfsan_init_shadow);
 
-/********/
+/********************************************************************/
+/************************** Late boot init **************************/
 
-// Warning: SUPER janky code to get the tests to work with task whitelisting
+bool kdf_dbgfs_run_tests = false;
+bool kdf_dbgfs_generic_syscall_label = false;
 
-#define SET_WHITELIST_TASK() \
-  char _saved_str[TASK_COMM_LEN]; \
-  kdf_util_strlcpy(_saved_str, current->comm, TASK_COMM_LEN); \
-  kdf_util_strlcpy(current->comm, "kdfsan_task", TASK_COMM_LEN);
+int kdfsan_enable(void *data, u64 *val);
+DEFINE_DEBUGFS_ATTRIBUTE(kdfsan_enable_fops, kdfsan_enable, NULL, "%lld\n");
 
-#define RESET_TASK() \
-  kdf_util_strlcpy(current->comm, _saved_str, TASK_COMM_LEN);
+int __init kdfsan_init(void) {
+  struct dentry *kdfsan_dir;
 
-/********/
+  printk("KDFSan: Initializing internal data...\n");
+  kdf_init_internal_data();
+
+  printk("KDFSan: Initializing debugfs...\n");
+  kdfsan_dir  = debugfs_create_dir("kdfsan", NULL);
+  debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
+  debugfs_create_bool("generic_syscall_label", 0666, kdfsan_dir,
+      &kdf_dbgfs_generic_syscall_label);
+  debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
+  printk("KDFSan: Initialization done.\n");
+  return 0;
+}
+postcore_initcall(kdfsan_init);
+
+/**********************************************************************/
+/************************** Post-boot enable **************************/
 
 void kdf_run_base_tests(bool is_first_run);
 void kdf_run_policies_tests(void);
 
-bool kdf_dbgfs_run_tests = false;
-bool kdf_dbgfs_generic_syscall_label = false;
+// Warning: SUPER janky code to get the tests to work with task whitelisting
+#define SET_WHITELIST_TASK() \
+  char _saved_str[TASK_COMM_LEN]; \
+  kdf_util_strlcpy(_saved_str, current->comm, TASK_COMM_LEN); \
+  kdf_util_strlcpy(current->comm, "kdfsan_task", TASK_COMM_LEN);
+#define RESET_TASK() \
+  kdf_util_strlcpy(current->comm, _saved_str, TASK_COMM_LEN);
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
@@ -141,21 +162,3 @@ int kdfsan_enable(void *data, u64 *val) {
   printk("KDFSan: Done.\n");
   return 0;
 }
-DEFINE_DEBUGFS_ATTRIBUTE(kdfsan_enable_fops, kdfsan_enable, NULL, "%lld\n");
-
-int __init kdfsan_init(void) {
-  struct dentry *kdfsan_dir;
-
-  printk("KDFSan: Initializing internal data...\n");
-  kdf_init_internal_data();
-
-  printk("KDFSan: Initializing debugfs...\n");
-  kdfsan_dir  = debugfs_create_dir("kdfsan", NULL);
-  debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
-  debugfs_create_bool("generic_syscall_label", 0666, kdfsan_dir,
-      &kdf_dbgfs_generic_syscall_label);
-  debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
-  printk("KDFSan: Initialization done.\n");
-  return 0;
-}
-postcore_initcall(kdfsan_init);
