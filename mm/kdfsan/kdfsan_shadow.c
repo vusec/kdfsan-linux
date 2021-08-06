@@ -2,11 +2,49 @@
 #include "kdfsan_shadow.h"
 #include "kdfsan_internal.h"
 
-static dfsan_label *get_shadow_addr(const u8 *ptr);
+/*****************************************************************************/
+/************************** Shadow accessor helpers **************************/
+
+static dfsan_label *get_shadow_addr(const u8 *ptr)
+{
+  uptr addr = (uptr) ptr;
+  struct page *page = NULL;
+  //uptr aligned_addr = 0;
+  uptr shadow_offset = 0;
+  void *shadow_base = NULL;
+  dfsan_label *shadow_addr = NULL;
+
+  //  if (unlikely(addr < (unsigned long)(__va(0)) ||
+  //      addr >= (unsigned long)(__va(max_pfn << PAGE_SHIFT))))
+  //    {
+  //    printk("get_shadow_addr: POINTER OUT OF RANGE (%px)",ptr);
+  //    return NULL;
+  //  }
+
+  // XXX: kmemcheck checks something about pte here.
+
+  page = kdf_virt_to_page_or_null((void*)ptr);
+  if (page == NULL) {
+    //printk("get_shadow_addr: NO PAGE EXISTS FOR VADDR %px\n",ptr);
+    return NULL;
+  }
+  if (page->shadow == NULL) {
+    //printk("get_shadow_addr: NO SHADOW EXISTS FOR PAGE AT %px (VADDR: %px)\n",page,ptr);
+    return NULL;
+  }
+
+  shadow_offset = (addr % PAGE_SIZE); // TODO: aligned accesses?
+  shadow_base = page_address(page->shadow);
+  shadow_addr = shadow_base + shadow_offset;
+  return shadow_addr;
+}
 
 static uptr get_internal_label_offset(const u8 *ptr) {
   return (((uptr) ptr) & INTERNAL_LABEL_ADDR_MASK) * INTERNAL_LABEL_BIT_WIDTH;
 }
+
+/**********************************************************************/
+/************************** Shadow accessors **************************/
 
 dfsan_label kdf_get_shadow(const u8 *ptr) {
   dfsan_label mem_labels = 0, ret = 0, *sptr = NULL;
@@ -30,77 +68,41 @@ void kdf_set_shadow(const u8 *ptr, dfsan_label label) {
   *sptr = new_label;
 }
 
+/*************************************************************************/
+/********************** Valid virtual address check **********************/
+
 // Taken from arch/x86/mm/physaddr.h
 // TODO(glider): do we need it?
 static inline int kdf_phys_addr_valid(resource_size_t addr)
 {
 #ifdef CONFIG_PHYS_ADDR_T_64BIT
-	return !(addr >> boot_cpu_data.x86_phys_bits);
+  return !(addr >> boot_cpu_data.x86_phys_bits);
 #else
-	return 1;
+  return 1;
 #endif
 }
 
-bool kdf_virt_addr_valid(void *addr)
+static bool kdf_virt_addr_valid(void *addr)
 {
-	unsigned long x = (unsigned long)addr;
-	unsigned long y = x - __START_KERNEL_map;
+  unsigned long x = (unsigned long)addr;
+  unsigned long y = x - __START_KERNEL_map;
 
-	/* use the carry flag to determine if x was < __START_KERNEL_map */
-	if (unlikely(x > y)) {
-		x = y + phys_base;
+  // use the carry flag to determine if x was < __START_KERNEL_map
+  if (unlikely(x > y)) {
+    x = y + phys_base;
+    if (y >= KERNEL_IMAGE_SIZE) return false;
+  } 
+  else {
+    x = y + (__START_KERNEL_map - PAGE_OFFSET);
+    // carry flag will be set if starting x was >= PAGE_OFFSET
+    if ((x > y) || !kdf_phys_addr_valid(x)) return false;
+  }
 
-		if (y >= KERNEL_IMAGE_SIZE)
-			return false;
-	} else {
-		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-
-		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-		if ((x > y) || !kdf_phys_addr_valid(x))
-			return false;
-	}
-
-	return pfn_valid(x >> PAGE_SHIFT);
+  return pfn_valid(x >> PAGE_SHIFT);
 }
 
 struct page *kdf_virt_to_page_or_null(void *vaddr)
 {
-	if (kdf_virt_addr_valid(vaddr))
-		return virt_to_page(vaddr);
-	else
-		return NULL;
-}
-
-static dfsan_label *get_shadow_addr(const u8 *ptr)
-{
-	uptr addr = (uptr) ptr;
-	struct page *page = NULL;
-	//uptr aligned_addr = 0;
-	uptr shadow_offset = 0;
-	void *shadow_base = NULL;
-	dfsan_label *shadow_addr = NULL;
-
-	//	if (unlikely(addr < (unsigned long)(__va(0)) ||
-	//			addr >= (unsigned long)(__va(max_pfn << PAGE_SHIFT))))
-	//    {
-	//    printk("get_shadow_addr: POINTER OUT OF RANGE (%px)",ptr);
-	//		return NULL;
-	//  }
-
-	// XXX: kmemcheck checks something about pte here.
-
-	page = kdf_virt_to_page_or_null((void*)ptr);
-	if (page == NULL) {
-		//printk("get_shadow_addr: NO PAGE EXISTS FOR VADDR %px\n",ptr);
-		return NULL;
-	}
-	if (page->shadow == NULL) {
-		//printk("get_shadow_addr: NO SHADOW EXISTS FOR PAGE AT %px (VADDR: %px)\n",page,ptr);
-		return NULL;
-	}
-
-	shadow_offset = (addr % PAGE_SIZE); // TODO: do stuff with aligned accesses?
-	shadow_base = page_address(page->shadow);
-	shadow_addr = shadow_base + shadow_offset;
-	return shadow_addr;
+  if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
+  else return NULL;
 }

@@ -209,20 +209,20 @@ void noinline dfsan_mem_transfer_callback(void *dest, const void *src, uptr size
 /************************************************************/
 /*************** Memory management interfaces ***************/
 
-int kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
+int noinline kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
   ENTER_NOINIT_RT(0);
   int ret = kdf_alloc_page(page, order, orig_flags, node);
   LEAVE_NOINIT_RT();
   return ret;
 }
 
-void kdfsan_free_page(struct page *page, unsigned int order) {
+void noinline kdfsan_free_page(struct page *page, unsigned int order) {
   ENTER_NOINIT_RT();
   kdf_free_page(page, order);
   LEAVE_NOINIT_RT();
 }
 
-void kdfsan_split_page(struct page *page, unsigned int order) {
+void noinline kdfsan_split_page(struct page *page, unsigned int order) {
   ENTER_NOINIT_RT();
   kdf_split_page(page, order);
   LEAVE_NOINIT_RT();
@@ -238,13 +238,13 @@ void noinline dfsan_copy_label_info(dfsan_label label, char * dest, size_t count
   LEAVE_RT();
 }
 
-void kdfsan_policy_syscall_arg(void * arg, size_t s, int arg_num) {
+void noinline kdfsan_policy_syscall_arg(void * arg, size_t s, int arg_num) {
   ENTER_WHITELIST_RT();
   kdf_policy_syscall_arg(arg, s, arg_num);
   LEAVE_WHITELIST_RT();
 }
 
-void kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
+void noinline kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label) {
   ENTER_WHITELIST_RT();
   kdf_policy_usercopy(dst, s, src_ptr_label);
   LEAVE_WHITELIST_RT();
