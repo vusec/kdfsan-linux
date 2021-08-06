@@ -106,20 +106,13 @@ EXPORT_SYMBOL(kdfsan_init_shadow);
 
 // Warning: SUPER janky code to get the tests to work with task whitelisting
 
-static char *my_strcpy(char *dst, const char* src) {
-  u32 i;
-  for (i=0; src[i] != '\0'; ++i) { dst[i] = src[i]; }
-  dst[i]= '\0';
-  return dst;
-}
-
 #define SET_WHITELIST_TASK() \
   char _saved_str[TASK_COMM_LEN]; \
-  my_strcpy(_saved_str, current->comm); \
-  my_strcpy(current->comm, "kdfsan_task");
+  kdf_util_strlcpy(_saved_str, current->comm, TASK_COMM_LEN); \
+  kdf_util_strlcpy(current->comm, "kdfsan_task", TASK_COMM_LEN);
 
 #define RESET_TASK() \
-  my_strcpy(current->comm, _saved_str);
+  kdf_util_strlcpy(current->comm, _saved_str, TASK_COMM_LEN);
 
 /********/
 

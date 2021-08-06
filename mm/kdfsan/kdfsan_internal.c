@@ -23,46 +23,6 @@ static char* str_kdf_print_bitvector = NULL;
 // An actual label within label_list (i.e., not just "NUM_LABELS - 1") to be returned when attempting to create a new label when no more labels are available
 static dfsan_label max_label = -1;
 
-/**** Helpers: string ****/
-
-static size_t my_strlen(const char *s) {
-  const char *sc;
-  for (sc = s; *sc != '\0'; ++sc) ;
-  return sc - s;
-}
-
-static size_t my_strlcpy(char *dest, const char *src, size_t size) {
-  size_t ret = my_strlen(src);
-  if (size) {
-    size_t len = (ret >= size) ? size - 1 : ret;
-    memcpy(dest, src, len);
-    dest[len] = '\0';
-  }
-  return ret;
-}
-
-static int my_memcmp (const void *cs, const void *ct, size_t count) {
-  const unsigned char *su1, *su2;
-  int res = 0;
-  for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
-  if ((res = *su1 - *su2) != 0)
-    break;
-  return res;
-}
-
-static int my_strcmp(const char *cs, const char *ct) {
-  unsigned char c1, c2;
-  while (1) {
-    c1 = *cs++;
-    c2 = *ct++;
-    if (c1 != c2)
-      return c1 < c2 ? -1 : 1;
-    if (!c1)
-      break;
-  }
-  return 0;
-}
-
 /**** Helpers: util ****/
 
 static void kdf_print_bitvector(dfsan_label lbl) {
@@ -100,7 +60,7 @@ static dfsan_label kdf_create_next_label(u8 *b, const char *desc) {
     // If bitvector was supplied, copy it into label_list
     __memcpy(this_bitvector->b, b, NUM_LABELS); // size could probably just be this_label; that'd be slightly faster
   }
-  my_strlcpy(this_bitvector->desc, desc, DESC_LEN);
+  kdf_util_strlcpy(this_bitvector->desc, desc, DESC_LEN);
 
   return this_label;
 }
@@ -117,7 +77,7 @@ void kdf_init_internal_data(void) {
 
   // Initialize 0 label: b should already be set to all 0; last_label should already by 0
   KDF_PANIC_ON(label_list->last_label != 0, "KDFSan error: the last_label should be 0 after label_list is initialized");
-  my_strlcpy(label_list->bitvectors[0].desc, "no-taint", DESC_LEN);
+  kdf_util_strlcpy(label_list->bitvectors[0].desc, "no-taint", DESC_LEN);
   #ifdef DEBUG_KDF_RT
   kdf_print_bitvector(0);
   #endif
@@ -177,7 +137,7 @@ dfsan_label kdf_union(dfsan_label l1, dfsan_label l2) {
   // check if the resulting bitvector exists
   // TODO: it might be faster to iterate from last_label to 0, assuming labels are most commonly union'ed with recently created labels
   for(dfsan_label lbl = 0; lbl <= label_list->last_label; lbl++) {
-    if(my_memcmp(b_tmp_kdf_union, label_list->bitvectors[lbl].b, label_list->last_label + 1) == 0) {
+    if(kdf_util_memcmp(b_tmp_kdf_union, label_list->bitvectors[lbl].b, label_list->last_label + 1) == 0) {
       // if resulting bitvector exists, return its label
       return lbl;
     }
@@ -237,7 +197,7 @@ dfsan_label kdf_has_label_with_desc(dfsan_label label, const char *desc) {
   // For each label with a matching description
   for(dfsan_label this_lbl = 0; this_lbl <= label_list->last_label; this_lbl++) {
     dfsan_label_bitvector *this_bitvector = &label_list->bitvectors[this_lbl];
-    if(my_strcmp(this_bitvector->desc, desc) == 0) {
+    if(kdf_util_strcmp(this_bitvector->desc, desc) == 0) {
       // Check whether given label contains it, and if so, return
       if(kdf_has_label(label, this_lbl) == true) {
         return this_lbl;
