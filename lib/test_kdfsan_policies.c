@@ -92,7 +92,7 @@ static void testpolicies_usercopy(void) {
   //printk("    KDFSan usercopy test: attacker_label = %d, usercopy_label = %d, unioned_label = %d\n", attacker_label, usercopy_label, unioned_label);
 
   // Allocate mem
-  kmem = kmalloc(size, GFP_KERNEL);
+  kmem = kzalloc(size, GFP_KERNEL);
 	TEST_PANIC_ON(!kmem, "KDFSan test error: Failed to allocate kernel memory");
 	user_addr = vm_mmap(NULL, 0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0);
   TEST_PANIC_ON(user_addr >= (unsigned long)(TASK_SIZE), "KDFSan test error: Failed to allocate user memory");

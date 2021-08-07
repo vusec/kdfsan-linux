@@ -77,7 +77,7 @@ static void testbase_shadow(void) {
   testbase_shadow_at(&i);
 
   printk("    KDFSan: Running shadow test for heap...\n");
-  int* a_p = kmalloc(sizeof(int),GFP_KERNEL);
+  int* a_p = kzalloc(sizeof(int),GFP_KERNEL);
   *a_p = 1;
   testbase_shadow_at(a_p);
   kfree(a_p);
@@ -436,45 +436,6 @@ static void testbase_asminline(void) {
 
 /****************/
 
-static void testbase_asmfxns_clear_page(void) {
-  printk("    KDFSan: Running asm function test -- clear_page... (TODO: implement)\n");
-
-  /*
-  // Init buffer
-  char * kmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-  clear_mem(kmem, PAGE_SIZE);
-
-  // Init taint
-  char val = 34;
-  dfsan_label taint = dfsan_create_label("x", 0);
-  dfsan_set_label(taint, &val, sizeof(val));
-
-  // Taint one byte of buffer
-  kmem[77] = val;
-  ASSERT(kmem[77] == val);
-  ASSERT(dfsan_get_label(kmem[76] == 0));
-  ASSERT(dfsan_get_label(kmem[77] == taint));
-  ASSERT(dfsan_get_label(kmem[78] == 0));
-  ASSERT(dfsan_read_label(kmem, PAGE_SIZE) == taint);
-
-  // Clear page
-  clear_page(kmem);
-  ASSERT(dfsan_read_label(kmem, PAGE_SIZE) == 0);
-  ASSERT(kmem[77] == 0); // clear_page works as expected
-
-  kfree(kmem);
-  */
-}
-
-static void testbase_asmfxns(void) {
-  printk("    KDFSan: Running asm function calls test... (TODO: add more functions)\n");
-
-  testbase_asmfxns_clear_page();
-  // TODO: check labels of functions with custom taint handlers for asm
-}
-
-/****************/
-
 static void testbase_string(void) {
   printk("    KDFSan: Running string tests...\n");
 
@@ -534,6 +495,46 @@ static void testbase_string(void) {
   ASSERT(src == (char) dst); // dst actually equals ((src) | (src << 8) | (src << 16) | (src << 24)) because memset does 1-byte copies
 
   // TODO: memmove, strcpy, strncpy, strlen
+}
+
+/****************/
+
+static void testbase_asmfxns_clear_page(void) {
+  printk("    KDFSan: Running asm function test -- clear_page... (TODO: implement)\n");
+
+  // Init buffer
+  char * kmem = kzalloc(PAGE_SIZE, GFP_KERNEL);
+  clear_mem(kmem, PAGE_SIZE);
+
+  // Init taint
+  char val = 34;
+  dfsan_label taint = dfsan_create_label("x11", 0);
+  dfsan_set_label(taint, &val, sizeof(val));
+
+  // Taint one byte of buffer
+  kmem[77] = val;
+  ASSERT(kmem[77] == val);
+  ASSERT(dfsan_get_label(kmem[76]) == 0);
+  ASSERT(dfsan_get_label(kmem[77]) == taint);
+  ASSERT(dfsan_get_label(kmem[78]) == 0);
+  ASSERT(dfsan_read_label(kmem, PAGE_SIZE) == taint);
+
+  // Clear page
+  clear_page(kmem);
+  ASSERT(kmem[77] == 0); // clear_page works as expected
+  ASSERT(dfsan_get_label(kmem[76]) == 0);
+  ASSERT(dfsan_get_label(kmem[77]) == 0); // now untainted
+  ASSERT(dfsan_get_label(kmem[78]) == 0);
+  ASSERT(dfsan_read_label(kmem, PAGE_SIZE) == 0); // now untainted
+
+  kfree(kmem);
+}
+
+static void testbase_asmfxns(void) {
+  printk("    KDFSan: Running asm function calls test... (TODO: add more functions)\n");
+
+  testbase_asmfxns_clear_page();
+  // TODO: check labels of functions with custom taint handlers for asm
 }
 
 /****************/
