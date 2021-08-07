@@ -12,7 +12,7 @@
 #define KASAN_STACK_ORDER 0
 #endif
 #ifdef CONFIG_KDFSAN
-#define KDFSAN_STACK_ORDER 3
+#define KDFSAN_STACK_ORDER 2
 #else
 #define KDFSAN_STACK_ORDER 0
 #endif
