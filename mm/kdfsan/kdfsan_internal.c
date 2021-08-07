@@ -1,6 +1,6 @@
 #include "kdfsan_types.h"
-#include "kdfsan_internal.h"
 #include "kdfsan_shadow.h"
+#include "kdfsan_internal.h"
 
 static const uptr DESC_LEN = 150UL;
 typedef struct {
@@ -21,7 +21,8 @@ static char* str_kdf_print_bitvector = NULL;
 // An actual label within label_list (i.e., not just "NUM_LABELS - 1") to be returned when attempting to create a new label when no more labels are available
 static dfsan_label max_label = -1;
 
-/**** Helpers ****/
+/*************************************************************/
+/************************** Helpers **************************/
 
 static void kdf_print_bitvector(dfsan_label lbl) {
   KDF_CHECK_LABEL(lbl);
@@ -81,7 +82,8 @@ void kdf_init_internal_data(void) {
   max_label = kdf_create_label("max-label");
 }
 
-/**** Interfaces handlers ****/
+/************************************************************************/
+/************************** Interface handlers **************************/
 
 void kdf_memtransfer(void *dest, const void *src, uptr count) {
   u8 *tmp;
@@ -207,7 +209,8 @@ dfsan_label kdf_get_label_count(void) {
   return label_list->last_label;
 }
 
-/**** Misc. internals ****/
+/**********************************************************************/
+/****************** Miscellaneous interface handlers ******************/
 
 void kdf_copy_label_info(dfsan_label label, char * dest, size_t count) {
   u8 *b = label_list->bitvectors[label].b;

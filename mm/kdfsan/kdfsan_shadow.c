@@ -1,6 +1,43 @@
 #include "kdfsan_types.h"
-#include "kdfsan_shadow.h"
-#include "kdfsan_internal.h"
+
+/*************************************************************************/
+/********************** Valid virtual address check **********************/
+
+// Taken from arch/x86/mm/physaddr.h
+// TODO(glider): do we need it?
+static inline int kdf_phys_addr_valid(resource_size_t addr)
+{
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
+  return !(addr >> boot_cpu_data.x86_phys_bits);
+#else
+  return 1;
+#endif
+}
+
+static bool kdf_virt_addr_valid(void *addr)
+{
+  unsigned long x = (unsigned long)addr;
+  unsigned long y = x - __START_KERNEL_map;
+
+  // use the carry flag to determine if x was < __START_KERNEL_map
+  if (unlikely(x > y)) {
+    x = y + phys_base;
+    if (y >= KERNEL_IMAGE_SIZE) return false;
+  }
+  else {
+    x = y + (__START_KERNEL_map - PAGE_OFFSET);
+    // carry flag will be set if starting x was >= PAGE_OFFSET
+    if ((x > y) || !kdf_phys_addr_valid(x)) return false;
+  }
+
+  return pfn_valid(x >> PAGE_SHIFT);
+}
+
+struct page *kdf_virt_to_page_or_null(void *vaddr)
+{
+  if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
+  else return NULL;
+}
 
 /*****************************************************************************/
 /************************** Shadow accessor helpers **************************/
@@ -66,43 +103,4 @@ void kdf_set_shadow(const u8 *ptr, dfsan_label label) {
   new_label = (old_labels & ~(INTERNAL_LABEL_MASK << get_internal_label_offset(ptr))) | ((label & INTERNAL_LABEL_MASK) << get_internal_label_offset(ptr));
   //printk("----set_shadow: setting *shadow_of(%p) = *(%p) <-- %04x (new label in mem) <-- %x (single label); was %04x\n",ptr,sptr,new_label,label,old_labels);
   *sptr = new_label;
-}
-
-/*************************************************************************/
-/********************** Valid virtual address check **********************/
-
-// Taken from arch/x86/mm/physaddr.h
-// TODO(glider): do we need it?
-static inline int kdf_phys_addr_valid(resource_size_t addr)
-{
-#ifdef CONFIG_PHYS_ADDR_T_64BIT
-  return !(addr >> boot_cpu_data.x86_phys_bits);
-#else
-  return 1;
-#endif
-}
-
-static bool kdf_virt_addr_valid(void *addr)
-{
-  unsigned long x = (unsigned long)addr;
-  unsigned long y = x - __START_KERNEL_map;
-
-  // use the carry flag to determine if x was < __START_KERNEL_map
-  if (unlikely(x > y)) {
-    x = y + phys_base;
-    if (y >= KERNEL_IMAGE_SIZE) return false;
-  } 
-  else {
-    x = y + (__START_KERNEL_map - PAGE_OFFSET);
-    // carry flag will be set if starting x was >= PAGE_OFFSET
-    if ((x > y) || !kdf_phys_addr_valid(x)) return false;
-  }
-
-  return pfn_valid(x >> PAGE_SHIFT);
-}
-
-struct page *kdf_virt_to_page_or_null(void *vaddr)
-{
-  if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
-  else return NULL;
 }

@@ -1,6 +1,4 @@
 #include "kdfsan_types.h"
-#include "kdfsan_shadow.h"
-#include "kdfsan_interface.h"
 
 int kdf_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
   struct page *shadow;

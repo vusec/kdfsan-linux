@@ -1,6 +1,5 @@
 #include "kdfsan_types.h"
 #include "kdfsan_internal.h"
-#include "kdfsan_interface.h"
 #include "kdfsan_mm.h"
 #include "kdfsan_policies.h"
 
@@ -31,6 +30,12 @@ void kdf_init_finished(void) { kdf_is_init_done = true; }
 // Check for whether dfsan rt is being called from a function called by dfsan rt
 static void set_rt(void) { kdf_is_in_rt = true; }
 static void unset_rt(void) { kdf_is_in_rt = false; }
+
+// TODO: Probably should put set_rt after preempt_disable/local_irq_save/stop_nmi and
+// unset_rt before restart_nmi/local_irq_restore/preempt_enable. This would probably require
+// disabling instrumentation for arch/x86/kernel/nmi.c (at least). For now, we'll set/unset_rt
+// from outside of the non-pre-emptable state, at the risk of losing KDFSan coverage, i.e.,
+// because KDFSan would be disabled during an interrupt e.g., between set_rt() and preempt_disable()
 
 #define CHECK_RT(default_ret) do { if(!kdf_is_init_done || kdf_is_in_rt) { return default_ret; } } while(0)
 #define ENTER_RT(default_ret) \

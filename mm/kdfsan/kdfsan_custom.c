@@ -1,5 +1,4 @@
 #include "kdfsan_types.h"
-#include "kdfsan_interface.h"
 
 void *__dfsw___memcpy(void *dest, const void *src, size_t n,
                     dfsan_label dest_label, dfsan_label src_label,

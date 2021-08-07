@@ -11,7 +11,7 @@
 #include <linux/debugfs.h>
 
 /*********************************************************************/
-/************************** Early boot init **************************/
+/************************** Early-boot init **************************/
 
 #define NUM_FUTURE_RANGES 128
 struct start_end_pair {
@@ -89,7 +89,7 @@ void __init kdfsan_init_shadow(void) {
 }
 
 /********************************************************************/
-/************************** Late boot init **************************/
+/************************** Late-boot init **************************/
 
 bool kdf_dbgfs_run_tests = false;
 bool kdf_dbgfs_generic_syscall_label = false;
