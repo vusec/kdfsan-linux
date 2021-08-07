@@ -850,8 +850,6 @@ endif
 
 endif # CONFIG_DEBUG_INFO
 
-KBUILD_LDFLAGS += -error-limit=0
-
 KBUILD_CFLAGS += $(DEBUG_CFLAGS)
 export DEBUG_CFLAGS
 
