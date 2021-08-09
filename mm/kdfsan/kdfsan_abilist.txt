@@ -388,3 +388,6 @@ fun:x86_64_start_kernel=uninstrumented
 fun:x86_64_start_kernel=discard
 fun:x86_acpi_enter_sleep_state=uninstrumented
 fun:x86_acpi_enter_sleep_state=discard
+
+fun:kmalloc_order_trace=uninstrumented
+fun:kmalloc_order_trace=discard
