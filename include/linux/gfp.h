@@ -245,9 +245,9 @@ struct vm_area_struct;
 #define __GFP_NOLOCKDEP ((__force gfp_t)___GFP_NOLOCKDEP)
 
 /* Room for N __GFP_FOO bits */
-#ifdef CONFIG_KDFSAN
+#if defined(CONFIG_KDFSAN)
 #define __GFP_BITS_SHIFT 25
-#elif CONFIG_LOCKDEP
+#elif defined(CONFIG_LOCKDEP)
 #define __GFP_BITS_SHIFT 24
 #else
 #define __GFP_BITS_SHIFT 23
