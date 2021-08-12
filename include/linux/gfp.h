@@ -58,6 +58,12 @@ struct vm_area_struct;
 #else
 #define ___GFP_NOLOCKDEP	0
 #endif
+#ifdef CONFIG_KDFSAN
+#define ___GFP_NO_KDFSAN_SHADOW 0x1000000u
+#else
+#define ___GFP_NO_KDFSAN_SHADOW 0
+#endif
+
 /* If the above are modified, __GFP_BITS_SHIFT may need updating */
 
 /*
@@ -233,12 +239,19 @@ struct vm_area_struct;
 #define __GFP_NOWARN	((__force gfp_t)___GFP_NOWARN)
 #define __GFP_COMP	((__force gfp_t)___GFP_COMP)
 #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)
+#define __GFP_NO_KDFSAN_SHADOW  ((__force gfp_t)___GFP_NO_KDFSAN_SHADOW)
 
 /* Disable lockdep for GFP context tracking */
 #define __GFP_NOLOCKDEP ((__force gfp_t)___GFP_NOLOCKDEP)
 
 /* Room for N __GFP_FOO bits */
-#define __GFP_BITS_SHIFT (23 + IS_ENABLED(CONFIG_LOCKDEP))
+#ifdef CONFIG_KDFSAN
+#define __GFP_BITS_SHIFT 25
+#elif CONFIG_LOCKDEP
+#define __GFP_BITS_SHIFT 24
+#else
+#define __GFP_BITS_SHIFT 23
+#endif
 #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
 /**

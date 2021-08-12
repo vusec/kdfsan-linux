@@ -6,6 +6,7 @@
 
 #ifndef __ASSEMBLY__
 #include <asm/alternative.h>
+#include <linux/kdfsan.h>
 
 /* duplicated to the one in bootmem.h */
 extern unsigned long max_pfn;
@@ -46,12 +47,14 @@ void clear_page_erms(void *page);
 
 static inline void clear_page(void *page)
 {
+	void *page_copy = page;
 	alternative_call_2(clear_page_orig,
 			   clear_page_rep, X86_FEATURE_REP_GOOD,
 			   clear_page_erms, X86_FEATURE_ERMS,
 			   "=D" (page),
 			   "0" (page)
 			   : "cc", "memory", "rax", "rcx");
+	dfsan_set_label(0, page_copy, PAGE_SIZE);
 }
 
 void copy_page(void *to, void *from);

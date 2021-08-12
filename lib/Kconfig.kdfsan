@@ -1,0 +1,10 @@
+config HAVE_ARCH_KDFSAN
+  bool
+
+if HAVE_ARCH_KDFSAN
+
+config KDFSAN
+  bool "DataFlowSanitizer : generalised dynamic data flow analysis"
+  default n
+
+endif

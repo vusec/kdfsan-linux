@@ -1,0 +1,4 @@
+export CFLAGS_KDFSAN := -fsanitize=dataflow \
+	-mllvm -dfsan-kernel \
+	-mllvm -dfsan-event-callbacks \
+	-mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist.txt

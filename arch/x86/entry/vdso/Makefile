@@ -13,6 +13,8 @@ include $(srctree)/lib/vdso/Makefile
 KASAN_SANITIZE			:= n
 UBSAN_SANITIZE			:= n
 KCSAN_SANITIZE			:= n
+KDFSAN_SANITIZE_vclock_gettime.o := n
+KDFSAN_SANITIZE_vgetcpu.o	:= n
 OBJECT_FILES_NON_STANDARD	:= y
 
 # Prevents link failures: __sanitizer_cov_trace_pc() is not linked in.
@@ -34,6 +36,7 @@ obj-y				+= vma.o extable.o
 KASAN_SANITIZE_vma.o		:= y
 UBSAN_SANITIZE_vma.o		:= y
 KCSAN_SANITIZE_vma.o		:= y
+KDFSAN_SANITIZE_vma.o		:= y
 OBJECT_FILES_NON_STANDARD_vma.o	:= n
 
 # vDSO images to build
