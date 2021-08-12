@@ -23,17 +23,13 @@
 #endif
 
 #ifndef cond_syscall
-#define cond_syscall(x)	asm(				\
-	".weak " __stringify(x) "\n\t"			\
-	".set  " __stringify(x) ","			\
-		 __stringify(sys_ni_syscall))
+#define cond_syscall(x)	\
+  long x(void) __attribute__((weak, alias(__stringify(sys_ni_syscall))))
 #endif
 
 #ifndef SYSCALL_ALIAS
-#define SYSCALL_ALIAS(alias, name) asm(			\
-	".globl " __stringify(alias) "\n\t"		\
-	".set   " __stringify(alias) ","		\
-		  __stringify(name))
+#define SYSCALL_ALIAS(aka, name) \
+  long aka(void) __attribute__((alias(__stringify(name))))
 #endif
 
 #define __page_aligned_data	__section(".data..page_aligned") __aligned(PAGE_SIZE)
