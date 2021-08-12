@@ -1,4 +1,11 @@
+ifeq ($(ARCH),x86)
+kdf_arch_abilist := -mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist_x86.txt
+else ifeq ($(ARCH),arm64)
+kdf_arch_abilist := -mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist_arm64.txt
+endif
+
 export CFLAGS_KDFSAN := -fsanitize=dataflow \
 	-mllvm -dfsan-kernel \
 	-mllvm -dfsan-event-callbacks \
-	-mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist.txt
+	-mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist_base.txt \
+	$(kdf_arch_abilist)
