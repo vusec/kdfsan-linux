@@ -45,12 +45,12 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        /*stop_nmi();*/ \
     } while(0)
 #define LEAVE_RT() \
     do { \
         KDF_PANIC_ON(!irqs_disabled(), "KDFSan error! IRQs should be disabled within the runtime!"); \
-        restart_nmi(); \
+        /*restart_nmi();*/ \
         local_irq_restore(__irq_flags); \
         preempt_enable(); \
         unset_rt(); \
@@ -64,7 +64,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        /*stop_nmi();*/ \
 	} while(0)
 #define LEAVE_NOINIT_RT() LEAVE_RT()
 
@@ -77,7 +77,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        /*stop_nmi();*/ \
     } while(0)
 #define LEAVE_WHITELIST_RT() LEAVE_RT()
 

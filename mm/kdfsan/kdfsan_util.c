@@ -114,9 +114,20 @@ int kdf_util_hook_is_whitelist_task(void) {
   return 0;
 }
 
+#if defined(CONFIG_X86)
+
 // TODO: Test this
 noinline unsigned long kdf_util_syscall_get_nr(void) {
   unsigned long __ptr = (unsigned long)(current->stack);
   __ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
   return (((struct pt_regs *)__ptr) - 1)->orig_ax;
 }
+
+#elif defined(CONFIG_ARM64)
+
+// TODO: Fix
+noinline unsigned long kdf_util_syscall_get_nr(void) {
+  return 0;
+}
+
+#endif

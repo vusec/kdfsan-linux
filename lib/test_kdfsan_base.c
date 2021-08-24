@@ -365,6 +365,8 @@ static void testbase_custom(void) {
 
 /****************/
 
+#ifdef CONFIG_X86
+
 static void testbase_asminline(void) {
   printk("    KDFSan: Running inline asm test...\n");
 
@@ -434,6 +436,14 @@ static void testbase_asminline(void) {
   ASSERT(dfsan_get_label(tmp) == 0);
 }
 
+#else
+
+static void testbase_asminline(void) {
+  printk("    KDFSan: No inline asm test for this architecture. Skipping...\n");
+}
+
+#endif
+
 /****************/
 
 static void testbase_string(void) {
@@ -499,6 +509,8 @@ static void testbase_string(void) {
 
 /****************/
 
+#ifdef CONFIG_X86
+
 static void testbase_asmfxns_clear_page(void) {
   printk("    KDFSan: Running asm function test -- clear_page... (TODO: implement)\n");
 
@@ -536,6 +548,15 @@ static void testbase_asmfxns(void) {
   testbase_asmfxns_clear_page();
   // TODO: check labels of functions with custom taint handlers for asm
 }
+
+#else
+
+
+static void testbase_asmfxns(void) {
+  printk("    KDFSan: No asm function calls test for this architecture. Skipping...\n");
+}
+
+#endif
 
 /****************/
 
