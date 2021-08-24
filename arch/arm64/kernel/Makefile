@@ -19,6 +19,8 @@ CFLAGS_syscall.o	+= -fno-stack-protector
 # inhibit KCOV instrumentation, disable it for the entire compilation unit.
 KCOV_INSTRUMENT_entry-common.o := n
 
+KDFSAN_SANITIZE_setup.o += n
+
 # Object file lists.
 obj-y			:= debug-monitors.o entry.o irq.o fpsimd.o		\
 			   entry-common.o entry-fpsimd.o process.o ptrace.o	\

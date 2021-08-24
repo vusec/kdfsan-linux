@@ -254,3 +254,5 @@ void noinline kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_l
   kdf_policy_usercopy(dst, s, src_ptr_label);
   LEAVE_WHITELIST_RT();
 }
+
+dfsan_label dfsan_get_label(long data) { return 0; } // tmp
