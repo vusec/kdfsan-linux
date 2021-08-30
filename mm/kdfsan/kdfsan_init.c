@@ -35,7 +35,6 @@ static void __init kdf_record_future_shadow_range(void *start, void *end) {
 
 /* Allocate metadata for pages allocated at boot time. */
 static void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
-/*
   u64 addr, size;
   struct page *page;
   void *shadow;
@@ -57,7 +56,6 @@ static void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
     shadow_p->shadow = NULL;
     page->shadow = shadow_p;
   }
-*/
 }
 
 /*
