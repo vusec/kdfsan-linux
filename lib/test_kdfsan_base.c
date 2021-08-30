@@ -485,8 +485,6 @@ static void testbase_string(void) {
   ASSERT(dfsan_get_label(dst) == 0);
 
   // memset32 test
-  // DEBUG -- when this test is left in these labels appear during the spec_tests: i3, j3, x10
-  // DEBUG -- when this test is commented out, these labels appear during the spec_tests: i3, j3, j4
   memset32(&dst, src, 1);
   ASSERT(dfsan_get_label(src) == taint);
   ASSERT(dfsan_get_label(dst) == taint);
