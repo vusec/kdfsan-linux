@@ -594,8 +594,8 @@ static void testbase_stack_shadow(void) {
 
 /****************/
 
-void kdf_run_base_tests(bool is_first_run) {
-  if(is_first_run) testbase_init();
+void kdf_run_base_tests(void) {
+  testbase_init(); // Test only works if run first
   testbase_shadow();
   testbase_basic();
   testbase_label_count();

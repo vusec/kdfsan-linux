@@ -122,7 +122,7 @@ postcore_initcall(kdfsan_init);
 /**********************************************************************/
 /************************** Post-boot enable **************************/
 
-void kdf_run_base_tests(bool is_first_run);
+void kdf_run_base_tests(void);
 void kdf_run_policies_tests(void);
 
 // Warning: SUPER janky code to get the tests to work with task whitelisting
@@ -141,7 +141,7 @@ static int kdfsan_enable(void *data, u64 *val) {
   kdf_policies_init();
   if (kdf_dbgfs_run_tests) {
     printk("KDFSan: Running KDFSan base tests...\n");
-    ini=get_cycles(); kdf_run_base_tests(true); end=get_cycles();
+    ini=get_cycles(); kdf_run_base_tests(); end=get_cycles();
     printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed)", (end-ini)/1000000);
     printk("KDFSan: Running KDFSan policies tests...\n");
     SET_WHITELIST_TASK();
