@@ -46,7 +46,9 @@ static bool kdf_virt_addr_valid(void *addr)
 
 struct page *kdf_virt_to_page_or_null(void *vaddr)
 {
+  if (vaddr < PAGE_OFFSET) return false;
   if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
+  if (kdf_virt_addr_valid(__va(__pa(vaddr)))) return virt_to_page(__va(__pa(vaddr)));
   else return NULL;
 }
 

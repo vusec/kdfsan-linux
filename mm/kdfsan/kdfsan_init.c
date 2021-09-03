@@ -47,12 +47,9 @@ static void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
   shadow = memblock_alloc(size, PAGE_SIZE);
   for (addr = 0; addr < size; addr += PAGE_SIZE) {
     page = kdf_virt_to_page_or_null((char *)start + addr);
+    if (page == NULL) { panic("Cannot get page struct for memory at %px.\n", (char *)start + addr); }
     shadow_p = kdf_virt_to_page_or_null((char *)shadow + addr);
-    if (page == NULL || shadow_p == NULL) {
-      printk("Error: Virtual address of memblock region is invalid. Skipping "
-          "page struct shadow initialization for this page.\n");
-      break;
-    }
+    if (shadow_p == NULL) { panic("Cannot get page struct for shadow memory at %px...\n", (char *)shadow + addr); }
     shadow_p->shadow = NULL;
     page->shadow = shadow_p;
   }
@@ -73,11 +70,11 @@ static void __init kdf_initialize_shadow(void) {
 
   printk("KDFSan: Initializing shadow...\n");
   printk("%s: recording all reserved memblock regions...\n",__func__);
-  for_each_reserved_mem_region(mb_region) kdf_record_future_shadow_range(phys_to_virt(mb_region->base),
-      phys_to_virt(mb_region->base + mb_region->size));
+  for_each_reserved_mem_region(mb_region)
+    kdf_record_future_shadow_range(phys_to_virt(mb_region->base), phys_to_virt(mb_region->base + mb_region->size));
 
-  //printk("%s: recording .data region...\n",__func__);
-  //kdf_record_future_shadow_range(_sdata, _edata);
+  printk("%s: recording .data region...\n",__func__);
+  kdf_record_future_shadow_range(_sdata, _edata);
 
   printk("%s: recording all online nodes regions...\n",__func__);
   for_each_online_node (nid) kdf_record_future_shadow_range(NODE_DATA(nid), (char *)NODE_DATA(nid) + nd_size);
