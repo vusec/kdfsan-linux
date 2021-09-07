@@ -4,7 +4,6 @@
 #include <linux/uaccess.h>
 #include <linux/mm.h>
 #include <linux/bitops.h>
-#include <linux/kdfsan.h>
 
 #include <asm/word-at-a-time.h>
 
@@ -90,7 +89,7 @@ efault:
  * threads. Use "strncpy_from_user()" instead to get a stable copy
  * of the string.
  */
-long strnlen_user_wrapped(const char __user *str, long count)
+long strnlen_user(const char __user *str, long count)
 {
 	unsigned long max_addr, src_addr;
 
@@ -117,11 +116,5 @@ long strnlen_user_wrapped(const char __user *str, long count)
 		}
 	}
 	return 0;
-}
-
-long strnlen_user(const char __user *str, long count) {
-	long retval = strnlen_user_wrapped(str, count);
-	kdfsan_policy_usercopy((void *) &retval, sizeof(retval), dfsan_get_label((long) str));
-	return retval;
 }
 EXPORT_SYMBOL(strnlen_user);

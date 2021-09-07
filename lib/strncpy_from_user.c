@@ -8,7 +8,6 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/mm.h>
-#include <linux/kdfsan.h>
 
 #include <asm/byteorder.h>
 #include <asm/word-at-a-time.h>
@@ -111,7 +110,7 @@ efault:
  * If @count is smaller than the length of the string, copies @count bytes
  * and returns @count.
  */
-static long strncpy_from_user_wrapped(char *dst, const char __user *src, long count)
+long strncpy_from_user(char *dst, const char __user *src, long count)
 {
 	unsigned long max_addr, src_addr;
 
@@ -143,12 +142,5 @@ static long strncpy_from_user_wrapped(char *dst, const char __user *src, long co
 		}
 	}
 	return -EFAULT;
-}
-
-long strncpy_from_user(char *dst, const char __user *src, long count) {
-	long retval = strncpy_from_user_wrapped(dst, src, count);
-	if(retval != -EFAULT)
-		kdfsan_policy_usercopy((void *) dst, retval, dfsan_get_label((long) src));
-	return retval;
 }
 EXPORT_SYMBOL(strncpy_from_user);
