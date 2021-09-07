@@ -341,7 +341,8 @@ do {									\
 		     _ASM_EXTABLE_UA(1b, %l2)				\
 		     : [output] ltype(x)				\
 		     : [umem] "m" (__m(addr))				\
-		     : : label)
+		     : : label);					\
+	kdfsan_policy_usercopy((void *)&(x), sizeof(*(addr)), dfsan_get_label((long) (addr)))
 
 #else // !CONFIG_CC_HAS_ASM_GOTO_OUTPUT
 

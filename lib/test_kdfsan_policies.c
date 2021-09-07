@@ -60,14 +60,14 @@ static void testpolicies_usercopy_run(char *kmem, char __user *usermem, size_t s
   // Test get_user
   clear_mem(kmem, size);
   TEST_PANIC_ON(get_user(kmem[0], usermem), "KDFSan test error: get_user failed");
-  ASSERT(check_labels(kmem, 1, expected_label) && dfsan_read_label(&kmem[1], size - 1) == 0);
-  ASSERT(check_mem(kmem, 1, data) && check_mem(&kmem[1], size - 1, 0));
+  ASSERT(check_labels(&kmem[0], 1, expected_label) && check_labels(&kmem[1], size - 1, 0));
+  ASSERT(check_mem(&kmem[0], 1, data) && check_mem(&kmem[1], size - 1, 0));
 
   // Test strncpy_from_user
   clear_mem(kmem, size);
   put_user(0, &usermem[size - 1]); // NULL-terminates string
   TEST_PANIC_ON(strncpy_from_user(kmem, usermem, size) != size - 1, "KDFSan test error: strncpy_from_user failed"); // returns length of string on success
-  ASSERT(check_labels(kmem, size - 1, expected_label) && dfsan_read_label(&kmem[size - 1], 1) == 0);
+  ASSERT(check_labels(kmem, size, expected_label));
   ASSERT(check_mem(kmem, size - 1, data) && check_mem(&kmem[size - 1], 1, 0));
 
   // Test strnlen_user
