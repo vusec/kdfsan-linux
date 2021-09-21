@@ -26,7 +26,7 @@ size_t kdf_util_strlcat(char *dest, const char *src, size_t count) {
   size_t dsize = kdf_util_strlen(dest);
   size_t len = kdf_util_strlen(src);
   size_t res = dsize + len;
-  BUG_ON(dsize < count); // This would be a bug
+  BUG_ON(dsize >= count); // This would be a bug
   dest += dsize;
   count -= dsize;
   if (len >= count) { len = count-1; }

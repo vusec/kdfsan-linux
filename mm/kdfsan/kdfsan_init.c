@@ -85,16 +85,23 @@ static void __init kdf_initialize_shadow(void) {
   printk("KDFSan: Shadow initialized.\n");
 }
 
+static void kdfsan_debugfs_preinit(void);
+
 void __init kdfsan_init_shadow(void) {
   kdf_initialize_shadow();
   kdfsan_interface_preinit();
+  kdfsan_debugfs_preinit();
 }
 
 /********************************************************************/
 /************************** Late-boot init **************************/
 
 bool kdf_dbgfs_run_tests = false;
-bool kdf_dbgfs_generic_syscall_label = false;
+bool kdf_dbgfs_generic_syscall_label = false; // should be true; changed in preinit
+
+static void __init kdfsan_debugfs_preinit(void) {
+  kdf_dbgfs_generic_syscall_label = true;
+}
 
 static int kdfsan_enable(void *data, u64 *val);
 DEFINE_DEBUGFS_ATTRIBUTE(kdfsan_enable_fops, kdfsan_enable, NULL, "%lld\n");

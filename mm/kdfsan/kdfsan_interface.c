@@ -6,10 +6,10 @@
 /************************************************************/
 /********************** Interface data **********************/
 
-dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }! this is correctly initialized elsewhere!
-dfsan_label __dfsan_retval_tls = -1; // should be 0! this is correctly initialized elsewhere!
-static bool kdf_is_init_done = -1; // should be false! this is correctly initialized elsewhere!
-static bool kdf_is_in_rt = -1; // should be false! this is correctly initialized elsewhere!
+dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }; changed in preinit
+dfsan_label __dfsan_retval_tls = -1; // should be 0; changed in preinit
+static bool kdf_is_init_done = -1; // should be false; changed in preinit
+static bool kdf_is_in_rt = -1; // should be false; changed in preinit
 
 void __init kdfsan_interface_preinit(void) {
   // Global variables are statically initialized to a non-zero value to keep them in the data section
@@ -226,22 +226,20 @@ void noinline dfsan_mem_transfer_callback(void *dest, const void *src, uptr size
 /*************** Memory management interfaces ***************/
 
 int noinline kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
-  ENTER_NOINIT_RT(0);
   int ret = kdf_alloc_page(page, order, orig_flags, node);
-  LEAVE_NOINIT_RT();
   return ret;
 }
 
 void noinline kdfsan_free_page(struct page *page, unsigned int order) {
-  ENTER_NOINIT_RT();
   kdf_free_page(page, order);
-  LEAVE_NOINIT_RT();
 }
 
 void noinline kdfsan_split_page(struct page *page, unsigned int order) {
-  ENTER_NOINIT_RT();
   kdf_split_page(page, order);
-  LEAVE_NOINIT_RT();
+}
+
+void noinline kdfsan_copy_page_shadow(struct page *dst, struct page *src) {
+  kdf_copy_page_shadow(dst, src);
 }
 
 /********************************************************/
