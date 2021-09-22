@@ -1037,7 +1037,6 @@ include $(addprefix $(srctree)/, $(include-y))
 KBUILD_CPPFLAGS += $(KCPPFLAGS)
 KBUILD_AFLAGS   += $(KAFLAGS)
 KBUILD_CFLAGS   += $(KCFLAGS)
-KBUILD_LDFLAGS += -error-limit=0
 
 KBUILD_LDFLAGS_MODULE += --build-id=sha1
 LDFLAGS_vmlinux += --build-id=sha1
