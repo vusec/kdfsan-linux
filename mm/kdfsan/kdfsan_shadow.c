@@ -3,6 +3,8 @@
 /*************************************************************************/
 /********************** Valid virtual address check **********************/
 
+#if defined(CONFIG_X86)
+
 // Taken from arch/x86/mm/physaddr.h
 // TODO(glider): do we need it?
 static inline int kdf_phys_addr_valid(resource_size_t addr)
@@ -33,16 +35,27 @@ static bool kdf_virt_addr_valid(void *addr)
   return pfn_valid(x >> PAGE_SHIFT);
 }
 
+#elif defined(CONFIG_ARM64)
+
+static bool kdf_virt_addr_valid(void *addr)
+{
+  return virt_addr_valid(addr);
+}
+
+#endif
+
 struct page *kdf_virt_to_page_or_null(void *vaddr)
 {
+  if (vaddr < PAGE_OFFSET) return NULL;
   if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
+  if (kdf_virt_addr_valid(__va(__pa(vaddr)))) return virt_to_page(__va(__pa(vaddr)));
   else return NULL;
 }
 
 /*****************************************************************************/
 /************************** Shadow accessor helpers **************************/
 
-static dfsan_label *get_shadow_addr(const u8 *ptr)
+dfsan_label *get_shadow_addr(const u8 *ptr)
 {
   uptr addr = (uptr) ptr;
   struct page *page = NULL;

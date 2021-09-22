@@ -365,6 +365,8 @@ static void testbase_custom(void) {
 
 /****************/
 
+#ifdef CONFIG_X86
+
 static void testbase_asminline(void) {
   printk("    KDFSan: Running inline asm test...\n");
 
@@ -434,6 +436,14 @@ static void testbase_asminline(void) {
   ASSERT(dfsan_get_label(tmp) == 0);
 }
 
+#else
+
+static void testbase_asminline(void) {
+  printk("    KDFSan: No inline asm test for this architecture. Skipping...\n");
+}
+
+#endif
+
 /****************/
 
 static void testbase_string(void) {
@@ -475,8 +485,6 @@ static void testbase_string(void) {
   ASSERT(dfsan_get_label(dst) == 0);
 
   // memset32 test
-  // DEBUG -- when this test is left in these labels appear during the spec_tests: i3, j3, x10
-  // DEBUG -- when this test is commented out, these labels appear during the spec_tests: i3, j3, j4
   memset32(&dst, src, 1);
   ASSERT(dfsan_get_label(src) == taint);
   ASSERT(dfsan_get_label(dst) == taint);
@@ -498,6 +506,8 @@ static void testbase_string(void) {
 }
 
 /****************/
+
+#ifdef CONFIG_X86
 
 static void testbase_asmfxns_clear_page(void) {
   printk("    KDFSan: Running asm function test -- clear_page... (TODO: implement)\n");
@@ -537,6 +547,15 @@ static void testbase_asmfxns(void) {
   // TODO: check labels of functions with custom taint handlers for asm
 }
 
+#else
+
+
+static void testbase_asmfxns(void) {
+  printk("    KDFSan: No asm function calls test for this architecture. Skipping...\n");
+}
+
+#endif
+
 /****************/
 
 static int testbase_stack_shadow_overwrite_stack(int i) {
@@ -573,8 +592,8 @@ static void testbase_stack_shadow(void) {
 
 /****************/
 
-void kdf_run_base_tests(bool is_first_run) {
-  if(is_first_run) testbase_init();
+void kdf_run_base_tests(void) {
+  testbase_init(); // Test only works if run first
   testbase_shadow();
   testbase_basic();
   testbase_label_count();

@@ -26,7 +26,7 @@ size_t kdf_util_strlcat(char *dest, const char *src, size_t count) {
   size_t dsize = kdf_util_strlen(dest);
   size_t len = kdf_util_strlen(src);
   size_t res = dsize + len;
-  BUG_ON(dsize < count); // This would be a bug
+  BUG_ON(dsize >= count); // This would be a bug
   dest += dsize;
   count -= dsize;
   if (len >= count) { len = count-1; }
@@ -114,9 +114,6 @@ int kdf_util_hook_is_whitelist_task(void) {
   return 0;
 }
 
-// TODO: Test this
 noinline unsigned long kdf_util_syscall_get_nr(void) {
-  unsigned long __ptr = (unsigned long)(current->stack);
-  __ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
-  return (((struct pt_regs *)__ptr) - 1)->orig_ax;
+  return syscall_get_nr(current, task_pt_regs(current));
 }

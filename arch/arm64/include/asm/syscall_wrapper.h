@@ -59,7 +59,9 @@ struct pt_regs;
 	}									\
 	static long __se_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__))		\
 	{									\
-		long ret = __do_sys##name(__MAP(x,__SC_CAST,__VA_ARGS__));	\
+		long ret;						\
+		__MAPN(x,__SC_KDF_TAINT,__VA_ARGS__);			\
+		ret = __do_sys##name(__MAP(x,__SC_CAST,__VA_ARGS__));	\
 		__MAP(x,__SC_TEST,__VA_ARGS__);					\
 		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));		\
 		return ret;							\

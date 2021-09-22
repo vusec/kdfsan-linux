@@ -3,6 +3,10 @@
 # Makefile for the linux kernel.
 #
 
+ifdef CONFIG_ARM64
+KDFSAN_SANITIZE_main.o += n
+endif
+
 ccflags-y := -fno-function-sections -fno-data-sections
 
 obj-y                          := main.o version.o mounts.o

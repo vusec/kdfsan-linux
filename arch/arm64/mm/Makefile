@@ -13,3 +13,7 @@ KASAN_SANITIZE_physaddr.o	+= n
 
 obj-$(CONFIG_KASAN)		+= kasan_init.o
 KASAN_SANITIZE_kasan_init.o	:= n
+
+KDFSAN_SANITIZE_init.o		+= n
+KDFSAN_SANITIZE_mmu.o		+= n
+KDFSAN_SANITIZE_physaddr.o	+= n

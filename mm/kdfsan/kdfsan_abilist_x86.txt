@@ -5,8 +5,6 @@ fun:__SCT__*=discard
 fun:__traceiter*=uninstrumented
 fun:__traceiter*=discard
 
-##############################################################################
-
 # Fixes undefined references *from instrumented code*
 fun:asm_exc_alignment_check=uninstrumented
 fun:asm_exc_alignment_check=discard

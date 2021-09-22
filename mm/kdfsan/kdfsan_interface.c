@@ -6,10 +6,10 @@
 /************************************************************/
 /********************** Interface data **********************/
 
-dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }! this is correctly initialized elsewhere!
-dfsan_label __dfsan_retval_tls = -1; // should be 0! this is correctly initialized elsewhere!
-static bool kdf_is_init_done = -1; // should be false! this is correctly initialized elsewhere!
-static bool kdf_is_in_rt = -1; // should be false! this is correctly initialized elsewhere!
+dfsan_label __dfsan_arg_tls[64] = { -1 }; // should be { 0 }; changed in preinit
+dfsan_label __dfsan_retval_tls = -1; // should be 0; changed in preinit
+static bool kdf_is_init_done = -1; // should be false; changed in preinit
+static bool kdf_is_in_rt = -1; // should be false; changed in preinit
 
 void __init kdfsan_interface_preinit(void) {
   // Global variables are statically initialized to a non-zero value to keep them in the data section
@@ -31,6 +31,14 @@ void kdf_init_finished(void) { kdf_is_init_done = true; }
 static void set_rt(void) { kdf_is_in_rt = true; }
 static void unset_rt(void) { kdf_is_in_rt = false; }
 
+#if defined(CONFIG_X86)
+#define kdf_stop_nmi() stop_nmi()
+#define kdf_restart_nmi() restart_nmi()
+#elif defined(CONFIG_ARM64)
+#define kdf_stop_nmi()
+#define kdf_restart_nmi()
+#endif
+
 // TODO: Probably should put set_rt after preempt_disable/local_irq_save/stop_nmi and
 // unset_rt before restart_nmi/local_irq_restore/preempt_enable. This would probably require
 // disabling instrumentation for arch/x86/kernel/nmi.c (at least). For now, we'll set/unset_rt
@@ -45,12 +53,12 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        kdf_stop_nmi(); \
     } while(0)
 #define LEAVE_RT() \
     do { \
         KDF_PANIC_ON(!irqs_disabled(), "KDFSan error! IRQs should be disabled within the runtime!"); \
-        restart_nmi(); \
+        kdf_restart_nmi(); \
         local_irq_restore(__irq_flags); \
         preempt_enable(); \
         unset_rt(); \
@@ -64,7 +72,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        kdf_stop_nmi(); \
 	} while(0)
 #define LEAVE_NOINIT_RT() LEAVE_RT()
 
@@ -77,7 +85,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
-        stop_nmi(); \
+        kdf_stop_nmi(); \
     } while(0)
 #define LEAVE_WHITELIST_RT() LEAVE_RT()
 
@@ -207,6 +215,9 @@ dfsan_label noinline __dfsw_dfsan_get_label(long data, dfsan_label data_label, d
   return data_label;
 }
 
+// TODO: Improve KDFSAN instrumentation coverage so that this can be removed.
+dfsan_label noinline dfsan_get_label(long data) { return 0; }
+
 void noinline dfsan_mem_transfer_callback(void *dest, const void *src, uptr size) {
   __dfsan_mem_transfer_callback(dest, src, size);
 }
@@ -215,22 +226,20 @@ void noinline dfsan_mem_transfer_callback(void *dest, const void *src, uptr size
 /*************** Memory management interfaces ***************/
 
 int noinline kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
-  ENTER_NOINIT_RT(0);
   int ret = kdf_alloc_page(page, order, orig_flags, node);
-  LEAVE_NOINIT_RT();
   return ret;
 }
 
 void noinline kdfsan_free_page(struct page *page, unsigned int order) {
-  ENTER_NOINIT_RT();
   kdf_free_page(page, order);
-  LEAVE_NOINIT_RT();
 }
 
 void noinline kdfsan_split_page(struct page *page, unsigned int order) {
-  ENTER_NOINIT_RT();
   kdf_split_page(page, order);
-  LEAVE_NOINIT_RT();
+}
+
+void noinline kdfsan_copy_page_shadow(struct page *dst, struct page *src) {
+  kdf_copy_page_shadow(dst, src);
 }
 
 /********************************************************/

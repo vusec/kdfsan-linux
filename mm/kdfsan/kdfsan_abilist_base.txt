@@ -29,6 +29,8 @@ fun:kdfsan_free_page=uninstrumented
 fun:kdfsan_free_page=discard
 fun:kdfsan_split_page=uninstrumented
 fun:kdfsan_split_page=discard
+fun:kdfsan_copy_page_shadow=uninstrumented
+fun:kdfsan_copy_page_shadow=discard
 fun:kdfsan_init=uninstrumented
 fun:kdfsan_init=discard
 fun:kdfsan_init_shadow=uninstrumented
@@ -74,3 +76,5 @@ fun:memcpy=custom
 fun:memset=uninstrumented
 fun:memset=custom
 
+fun:memset32=uninstrumented
+fun:memset32=custom

@@ -73,6 +73,7 @@
 #include <linux/perf_event.h>
 #include <linux/ptrace.h>
 #include <linux/vmalloc.h>
+#include <linux/kdfsan.h>
 
 #include <trace/events/kmem.h>
 
@@ -2922,6 +2923,7 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
 				put_page(old_page);
 			return 0;
 		}
+		kdfsan_copy_page_shadow(new_page, old_page);
 	}
 
 	if (mem_cgroup_charge(new_page, mm, GFP_KERNEL))

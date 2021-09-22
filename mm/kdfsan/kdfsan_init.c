@@ -4,7 +4,6 @@
 #include "kdfsan_policies.h"
 #include "kdfsan_interface.h"
 
-#include <asm/cpu_entry_area.h>
 #include <asm/sections.h>
 #include <linux/mm.h>
 #include <linux/memblock.h>
@@ -42,12 +41,15 @@ static void __init kdf_init_alloc_meta_for_range(void *start, void *end) {
   struct page *shadow_p;
 
   // FIXME: Potential bug -- If a range is in the same region as another range, then it will have >1 shadow page allocated for it
+  printk("Initializing shadow for region at %px-%px\n", start, end);
   start = (void *)ALIGN_DOWN((u64)start, PAGE_SIZE);
   size = ALIGN((u64)end - (u64)start, PAGE_SIZE);
   shadow = memblock_alloc(size, PAGE_SIZE);
   for (addr = 0; addr < size; addr += PAGE_SIZE) {
     page = kdf_virt_to_page_or_null((char *)start + addr);
+    if (page == NULL) { panic("Cannot get page struct for memory at %px.\n", (char *)start + addr); }
     shadow_p = kdf_virt_to_page_or_null((char *)shadow + addr);
+    if (shadow_p == NULL) { panic("Cannot get page struct for shadow memory at %px...\n", (char *)shadow + addr); }
     shadow_p->shadow = NULL;
     page->shadow = shadow_p;
   }
@@ -68,8 +70,8 @@ static void __init kdf_initialize_shadow(void) {
 
   printk("KDFSan: Initializing shadow...\n");
   printk("%s: recording all reserved memblock regions...\n",__func__);
-  for_each_reserved_mem_region(mb_region) kdf_record_future_shadow_range(phys_to_virt(mb_region->base),
-      phys_to_virt(mb_region->base + mb_region->size));
+  for_each_reserved_mem_region(mb_region)
+    kdf_record_future_shadow_range(phys_to_virt(mb_region->base), phys_to_virt(mb_region->base + mb_region->size));
 
   printk("%s: recording .data region...\n",__func__);
   kdf_record_future_shadow_range(_sdata, _edata);
@@ -83,16 +85,23 @@ static void __init kdf_initialize_shadow(void) {
   printk("KDFSan: Shadow initialized.\n");
 }
 
+static void kdfsan_debugfs_preinit(void);
+
 void __init kdfsan_init_shadow(void) {
   kdf_initialize_shadow();
   kdfsan_interface_preinit();
+  kdfsan_debugfs_preinit();
 }
 
 /********************************************************************/
 /************************** Late-boot init **************************/
 
 bool kdf_dbgfs_run_tests = false;
-bool kdf_dbgfs_generic_syscall_label = false;
+bool kdf_dbgfs_generic_syscall_label = false; // should be true; changed in preinit
+
+static void __init kdfsan_debugfs_preinit(void) {
+  kdf_dbgfs_generic_syscall_label = true;
+}
 
 static int kdfsan_enable(void *data, u64 *val);
 DEFINE_DEBUGFS_ATTRIBUTE(kdfsan_enable_fops, kdfsan_enable, NULL, "%lld\n");
@@ -117,7 +126,7 @@ postcore_initcall(kdfsan_init);
 /**********************************************************************/
 /************************** Post-boot enable **************************/
 
-void kdf_run_base_tests(bool is_first_run);
+void kdf_run_base_tests(void);
 void kdf_run_policies_tests(void);
 
 // Warning: SUPER janky code to get the tests to work with task whitelisting
@@ -136,7 +145,7 @@ static int kdfsan_enable(void *data, u64 *val) {
   kdf_policies_init();
   if (kdf_dbgfs_run_tests) {
     printk("KDFSan: Running KDFSan base tests...\n");
-    ini=get_cycles(); kdf_run_base_tests(true); end=get_cycles();
+    ini=get_cycles(); kdf_run_base_tests(); end=get_cycles();
     printk("KDFSan: KDFSan base tests complete (%liM cycles elapsed)", (end-ini)/1000000);
     printk("KDFSan: Running KDFSan policies tests...\n");
     SET_WHITELIST_TASK();

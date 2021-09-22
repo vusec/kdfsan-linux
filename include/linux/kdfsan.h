@@ -12,6 +12,7 @@ typedef u16 dfsan_label;
 int kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t flags, int node);
 void kdfsan_free_page(struct page *page, unsigned int order);
 void kdfsan_split_page(struct page *page, unsigned int order);
+void kdfsan_copy_page_shadow(struct page *dst, struct page *src);
 void __init kdfsan_init_shadow(void);
 void dfsan_mem_transfer_callback(void *dest, const void *src, uptr size);
 void dfsan_set_label(dfsan_label label, void *addr, uptr size);
@@ -29,6 +30,7 @@ void kdfsan_policy_usercopy(void * dst, size_t s, dfsan_label src_ptr_label);
 static inline int kdfsan_alloc_page(struct page *page, unsigned int order, gfp_t flags, int node) { return 0; }
 static inline void kdfsan_free_page(struct page *page, unsigned int order) { }
 static inline void kdfsan_split_page(struct page *page, unsigned int order) { }
+static inline void kdfsan_copy_page_shadow(struct page *dst, struct page *src) { }
 static inline void __init kdfsan_init_shadow(void) { }
 static inline void dfsan_mem_transfer_callback(void *dest, const void *src, uptr size) { }
 static inline void dfsan_set_label(dfsan_label label, void *addr, uptr size) { }

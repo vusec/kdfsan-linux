@@ -13,7 +13,9 @@
 #include <linux/irqflags.h>
 #include <linux/memblock.h>
 #include <linux/uaccess.h>
-#include <asm/cpu_entry_area.h>
+#include <linux/sched/task_stack.h>
+#include <asm/syscall.h>
+#include <asm/processor.h>
 #include "kdfsan_util.h"
 
 static const uptr INTERNAL_LABEL_LOG_BIT_WIDTH = 3; // {0,1,2,3,4} <--- CHANGE THIS TO ADJUST SHADOW MEM SIZE
