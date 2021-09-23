@@ -76,5 +76,11 @@ fun:memcpy=custom
 fun:memset=uninstrumented
 fun:memset=custom
 
+fun:memset16=uninstrumented
+fun:memset16=custom
+
 fun:memset32=uninstrumented
 fun:memset32=custom
+
+fun:memset64=uninstrumented
+fun:memset64=custom

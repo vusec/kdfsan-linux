@@ -5,6 +5,7 @@
 #ifndef __ASM_STRING_H
 #define __ASM_STRING_H
 
+#if !(defined(CONFIG_KDFSAN))
 #if !(defined(CONFIG_KASAN_GENERIC) || defined(CONFIG_KASAN_SW_TAGS))
 #define __HAVE_ARCH_STRRCHR
 extern char *strrchr(const char *, int c);
@@ -33,14 +34,16 @@ extern void *memchr(const void *, int, __kernel_size_t);
 
 #define __HAVE_ARCH_MEMCPY
 extern void *memcpy(void *, const void *, __kernel_size_t);
-extern void *__memcpy(void *, const void *, __kernel_size_t);
 
 #define __HAVE_ARCH_MEMMOVE
 extern void *memmove(void *, const void *, __kernel_size_t);
-extern void *__memmove(void *, const void *, __kernel_size_t);
 
 #define __HAVE_ARCH_MEMSET
 extern void *memset(void *, int, __kernel_size_t);
+#endif
+
+extern void *__memcpy(void *, const void *, __kernel_size_t);
+extern void *__memmove(void *, const void *, __kernel_size_t);
 extern void *__memset(void *, int, __kernel_size_t);
 
 #ifdef CONFIG_ARCH_HAS_UACCESS_FLUSHCACHE

@@ -28,7 +28,6 @@ static inline void *memset16(uint16_t *s, uint16_t v, size_t n)
 		     : "=&c" (d0), "=&D" (d1)
 		     : "a" (v), "1" (s), "0" (n)
 		     : "memory");
-	dfsan_set_label(dfsan_get_label(v),s,n*2);
 	return s;
 }
 
@@ -41,7 +40,6 @@ static inline void *memset32(uint32_t *s, uint32_t v, size_t n)
 		     : "=&c" (d0), "=&D" (d1)
 		     : "a" (v), "1" (s), "0" (n)
 		     : "memory");
-	dfsan_set_label(dfsan_get_label(v),s,n*4);
 	return s;
 }
 
@@ -54,7 +52,6 @@ static inline void *memset64(uint64_t *s, uint64_t v, size_t n)
 		     : "=&c" (d0), "=&D" (d1)
 		     : "a" (v), "1" (s), "0" (n)
 		     : "memory");
-	dfsan_set_label(dfsan_get_label(v),s,n*8);
 	return s;
 }
 
