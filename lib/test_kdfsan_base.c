@@ -507,10 +507,8 @@ static void testbase_string(void) {
 
 /****************/
 
-#ifdef CONFIG_X86
-
 static void testbase_asmfxns_clear_page(void) {
-  printk("    KDFSan: Running asm function test -- clear_page... (TODO: implement)\n");
+  printk("    KDFSan: Running asm function test -- clear_page...\n");
 
   // Init buffer
   char * kmem = kzalloc(PAGE_SIZE, GFP_KERNEL);
@@ -546,15 +544,6 @@ static void testbase_asmfxns(void) {
   testbase_asmfxns_clear_page();
   // TODO: check labels of functions with custom taint handlers for asm
 }
-
-#else
-
-
-static void testbase_asmfxns(void) {
-  printk("    KDFSan: No asm function calls test for this architecture. Skipping...\n");
-}
-
-#endif
 
 /****************/
 

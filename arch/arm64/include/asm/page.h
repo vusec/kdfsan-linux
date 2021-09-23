@@ -13,13 +13,25 @@
 #ifndef __ASSEMBLY__
 
 #include <linux/personality.h> /* for READ_IMPLIES_EXEC */
+#include <linux/kdfsan.h>
 #include <asm/pgtable-types.h>
 
 struct page;
 struct vm_area_struct;
 
-extern void copy_page(void *to, const void *from);
-extern void clear_page(void *to);
+extern void copy_page_orig(void *to, const void *from);
+static inline void copy_page(void *to, void *from)
+{
+	copy_page_orig(to, from);
+	dfsan_mem_transfer_callback(to, from, PAGE_SIZE);
+}
+
+extern void clear_page_orig(void *to);
+static inline void clear_page(void *to)
+{
+	clear_page_orig(to);
+	dfsan_set_label(0, to, PAGE_SIZE);
+}
 
 void copy_user_highpage(struct page *to, struct page *from,
 			unsigned long vaddr, struct vm_area_struct *vma);
