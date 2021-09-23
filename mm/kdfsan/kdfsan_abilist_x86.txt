@@ -1,5 +1,5 @@
 # Fixes undefined references from static calls
-# (There are a lot of symbols here; TODO: find out whether it's okay to simply 'discard' these
+# (There are a lot of symbols here; TODO - find out whether it's indeed okay to simply 'discard' these)
 fun:__SCT__*=uninstrumented
 fun:__SCT__*=discard
 fun:__traceiter*=uninstrumented
