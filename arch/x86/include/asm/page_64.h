@@ -57,7 +57,13 @@ static inline void clear_page(void *page)
 	dfsan_set_label(0, page_copy, PAGE_SIZE);
 }
 
-void copy_page(void *to, void *from);
+void copy_page_orig(void *to, void *from);
+
+static inline void copy_page(void *to, void *from)
+{
+	copy_page_orig(to, from);
+	dfsan_mem_transfer_callback(to, from, PAGE_SIZE);
+}
 
 #ifdef CONFIG_X86_5LEVEL
 /*

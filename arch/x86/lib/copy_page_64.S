@@ -13,13 +13,13 @@
  * prefetch distance based on SMP/UP.
  */
 	ALIGN
-SYM_FUNC_START(copy_page)
+SYM_FUNC_START(copy_page_orig)
 	ALTERNATIVE "jmp copy_page_regs", "", X86_FEATURE_REP_GOOD
 	movl	$4096/8, %ecx
 	rep	movsq
 	ret
-SYM_FUNC_END(copy_page)
-EXPORT_SYMBOL(copy_page)
+SYM_FUNC_END(copy_page_orig)
+EXPORT_SYMBOL(copy_page_orig)
 
 SYM_FUNC_START_LOCAL(copy_page_regs)
 	subq	$2*8,	%rsp
