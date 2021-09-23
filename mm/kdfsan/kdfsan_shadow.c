@@ -5,10 +5,7 @@
 
 #if defined(CONFIG_X86)
 
-// Taken from arch/x86/mm/physaddr.h
-// TODO(glider): do we need it?
-static inline int kdf_phys_addr_valid(resource_size_t addr)
-{
+static inline int kdf_phys_addr_valid(resource_size_t addr) {
 #ifdef CONFIG_PHYS_ADDR_T_64BIT
   return !(addr >> boot_cpu_data.x86_phys_bits);
 #else
@@ -16,19 +13,16 @@ static inline int kdf_phys_addr_valid(resource_size_t addr)
 #endif
 }
 
-static bool kdf_virt_addr_valid(void *addr)
-{
+static bool kdf_virt_addr_valid(void *addr) {
   unsigned long x = (unsigned long)addr;
   unsigned long y = x - __START_KERNEL_map;
 
-  // use the carry flag to determine if x was < __START_KERNEL_map
   if (unlikely(x > y)) {
     x = y + phys_base;
     if (y >= KERNEL_IMAGE_SIZE) return false;
   }
   else {
     x = y + (__START_KERNEL_map - PAGE_OFFSET);
-    // carry flag will be set if starting x was >= PAGE_OFFSET
     if ((x > y) || !kdf_phys_addr_valid(x)) return false;
   }
 
@@ -37,15 +31,13 @@ static bool kdf_virt_addr_valid(void *addr)
 
 #elif defined(CONFIG_ARM64)
 
-static bool kdf_virt_addr_valid(void *addr)
-{
+static bool kdf_virt_addr_valid(void *addr) {
   return virt_addr_valid(addr);
 }
 
 #endif
 
-struct page *kdf_virt_to_page_or_null(void *vaddr)
-{
+struct page *kdf_virt_to_page_or_null(void *vaddr) {
   if (vaddr < PAGE_OFFSET) return NULL;
   if (kdf_virt_addr_valid(vaddr)) return virt_to_page(vaddr);
   if (kdf_virt_addr_valid(__va(__pa(vaddr)))) return virt_to_page(__va(__pa(vaddr)));
@@ -55,23 +47,13 @@ struct page *kdf_virt_to_page_or_null(void *vaddr)
 /*****************************************************************************/
 /************************** Shadow accessor helpers **************************/
 
-dfsan_label *get_shadow_addr(const u8 *ptr)
-{
+dfsan_label *get_shadow_addr(const u8 *ptr) {
   uptr addr = (uptr) ptr;
   struct page *page = NULL;
   //uptr aligned_addr = 0;
   uptr shadow_offset = 0;
   void *shadow_base = NULL;
   dfsan_label *shadow_addr = NULL;
-
-  //  if (unlikely(addr < (unsigned long)(__va(0)) ||
-  //      addr >= (unsigned long)(__va(max_pfn << PAGE_SHIFT))))
-  //    {
-  //    printk("get_shadow_addr: POINTER OUT OF RANGE (%px)",ptr);
-  //    return NULL;
-  //  }
-
-  // XXX: kmemcheck checks something about pte here.
 
   page = kdf_virt_to_page_or_null((void*)ptr);
   if (page == NULL) {
@@ -83,7 +65,7 @@ dfsan_label *get_shadow_addr(const u8 *ptr)
     return NULL;
   }
 
-  shadow_offset = (addr % PAGE_SIZE); // TODO: aligned accesses?
+  shadow_offset = (addr % PAGE_SIZE);
   shadow_base = page_address(page->shadow);
   shadow_addr = shadow_base + shadow_offset;
   return shadow_addr;

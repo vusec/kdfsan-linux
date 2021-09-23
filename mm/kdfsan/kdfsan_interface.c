@@ -67,13 +67,13 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
 #define CHECK_ONLY_IN_RT(default_ret) do { if(kdf_is_in_rt) { return default_ret; } } while(0)
 #define ENTER_NOINIT_RT(default_ret) \
   unsigned long __irq_flags; \
-	do { \
+        do { \
         CHECK_ONLY_IN_RT(default_ret); \
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
         kdf_stop_nmi(); \
-	} while(0)
+        } while(0)
 #define LEAVE_NOINIT_RT() LEAVE_RT()
 
 #define CHECK_WHITELIST(default_ret) do { if(!kdf_util_hook_is_whitelist_task()) { return default_ret; } } while(0)
@@ -81,7 +81,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
     unsigned long __irq_flags; \
     do { \
         CHECK_RT(default_ret); \
-	CHECK_WHITELIST(default_ret); \
+        CHECK_WHITELIST(default_ret); \
         set_rt(); \
         preempt_disable(); \
         local_irq_save(__irq_flags); \
