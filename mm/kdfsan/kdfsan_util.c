@@ -80,7 +80,7 @@ size_t kdf_util_strlcpy(char *dest, const char *src, size_t size) {
   return ret;
 }
 
-int kdf_util_memcmp (const void *cs, const void *ct, size_t count) {
+int kdf_util_memcmp(const void *cs, const void *ct, size_t count) {
   const unsigned char *su1, *su2;
   int res = 0;
   for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
@@ -100,6 +100,18 @@ int kdf_util_strcmp(const char *cs, const char *ct) {
       break;
   }
   return 0;
+}
+
+char *kdf_util_strpbrk(const char *cs, const char *ct) {
+  const char *sc1, *sc2;
+
+  for (sc1 = cs; *sc1 != '\0'; ++sc1) {
+    for (sc2 = ct; *sc2 != '\0'; ++sc2) {
+      if (*sc1 == *sc2)
+        return (char *)sc1;
+      }
+    }
+  return NULL;
 }
 
 // TODO: Fix this (right now it assumes syscall-number whitelisting AND task-name whitelisting)
