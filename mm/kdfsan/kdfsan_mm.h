@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #ifndef KDFSAN_MM_H
 #define KDFSAN_MM_H
 

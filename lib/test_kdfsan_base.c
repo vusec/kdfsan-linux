@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #include <linux/kdfsan.h>
 #include <linux/string.h>
 #include <linux/printk.h>

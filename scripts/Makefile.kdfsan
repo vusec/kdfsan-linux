@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0
+
 ifeq ($(ARCH),x86)
 kdf_arch_abilist := -mllvm -dfsan-abilist=mm/kdfsan/kdfsan_abilist_x86.txt
 else ifeq ($(ARCH),arm64)

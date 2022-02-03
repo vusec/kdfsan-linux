@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #include "kdfsan_types.h"
 
 size_t kdf_util_strlen(const char *s) {

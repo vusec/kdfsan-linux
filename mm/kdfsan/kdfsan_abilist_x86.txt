@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0
+
 # Fixes undefined references from static calls
 # (There are a lot of symbols here; TODO - find out whether it's indeed okay to simply 'discard' these)
 fun:__SCT__*=uninstrumented

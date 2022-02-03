@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
+// Shadow memory hooks based on KMSAN's
+
 #include "kdfsan_types.h"
 
 /*************************************************************************/

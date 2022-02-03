@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #include "kdfsan_types.h"
 #include "kdfsan_internal.h"
 #include "kdfsan_mm.h"

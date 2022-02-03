@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #include "kdfsan_types.h"
 
 int kdf_alloc_page(struct page *page, unsigned int order, gfp_t orig_flags, int node) {
