@@ -2,6 +2,7 @@
 #include "kdfsan_internal.h"
 #include "kdfsan_mm.h"
 #include "kdfsan_policies.h"
+#include "kdfsan_whitelist.h"
 
 /************************************************************/
 /********************** Interface data **********************/
@@ -76,7 +77,7 @@ static void unset_rt(void) { kdf_is_in_rt = false; }
         } while(0)
 #define LEAVE_NOINIT_RT() LEAVE_RT()
 
-#define CHECK_WHITELIST(default_ret) do { if(!kdf_util_hook_is_whitelist_task()) { return default_ret; } } while(0)
+#define CHECK_WHITELIST(default_ret) do { if(!kdf_is_whitelist_task()) { return default_ret; } } while(0)
 #define ENTER_WHITELIST_RT(default_ret) \
     unsigned long __irq_flags; \
     do { \

@@ -3,6 +3,7 @@
 #include "kdfsan_shadow.h"
 #include "kdfsan_policies.h"
 #include "kdfsan_interface.h"
+#include "kdfsan_whitelist.h"
 
 #include <asm/sections.h>
 #include <linux/mm.h>
@@ -98,6 +99,7 @@ void __init kdfsan_init_shadow(void) {
 
 bool kdf_dbgfs_run_tests = false;
 bool kdf_dbgfs_generic_syscall_label = false; // should be true; changed in preinit
+kdfsan_whitelist_type_t kdf_dbgfs_whitelist_type = KDFSAN_WHITELIST_SYSCALLNR;
 
 static void __init kdfsan_debugfs_preinit(void) {
   kdf_dbgfs_generic_syscall_label = true;
@@ -118,6 +120,8 @@ int __init kdfsan_init(void) {
   debugfs_create_bool("generic_syscall_label", 0666, kdfsan_dir,
       &kdf_dbgfs_generic_syscall_label);
   debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
+  debugfs_create_u8("whitelist", 0666, kdfsan_dir,
+      (u8 *)&kdf_dbgfs_whitelist_type);
   printk("KDFSan: Initialization done.\n");
   return 0;
 }

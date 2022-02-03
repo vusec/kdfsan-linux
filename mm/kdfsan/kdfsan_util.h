@@ -9,7 +9,6 @@ size_t kdf_util_strlcpy(char *dest, const char *src, size_t size);
 int kdf_util_memcmp (const void *cs, const void *ct, size_t count);
 int kdf_util_strcmp(const char *cs, const char *ct);
 char *kdf_util_strpbrk(const char *cs, const char *ct);
-int kdf_util_hook_is_whitelist_task(void);
 unsigned long kdf_util_syscall_get_nr(void);
 
 #define CONCAT_STR(SRC,DEST,COUNT) \

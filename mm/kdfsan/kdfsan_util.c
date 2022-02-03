@@ -114,18 +114,6 @@ char *kdf_util_strpbrk(const char *cs, const char *ct) {
   return NULL;
 }
 
-// TODO: Fix this (right now it assumes syscall-number whitelisting AND task-name whitelisting)
-int kdf_util_hook_is_whitelist_task(void) {
-  unsigned long syscall_nr = kdf_util_syscall_get_nr();
-  char *task_name = current->comm;
-  if ((syscall_nr >= 600 && syscall_nr < 1200) ||
-      kdf_util_strncmp(task_name, "kdfsan_task", kdf_util_strlen("kdfsan_task")) == 0 ||
-      kdf_util_strncmp(task_name, "syz-executor", kdf_util_strlen("syz-executor")) == 0) {
-    return 1;
-  }
-  return 0;
-}
-
 noinline unsigned long kdf_util_syscall_get_nr(void) {
   return syscall_get_nr(current, task_pt_regs(current));
 }
