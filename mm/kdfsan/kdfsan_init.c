@@ -125,6 +125,7 @@ static char *my_strcpy(char *dst, const char* src) {
 
 /********/
 
+static bool kdf_dbgfs_disable_tainting = false;
 static bool kdf_dbgfs_run_tests = false;
 static bool kdf_dbgfs_run_kocher_tests = false;
 u8 kdf_dbgfs_syscall_label_type = KDF_SYSCALL_LABEL_DEFAULT;
@@ -152,6 +153,12 @@ void kdfinit_init(void);
 
 int kdfsan_enable(void *data, u64 *val) {
   unsigned long ini = 0, end = 0;
+  if (kdf_dbgfs_disable_tainting) {
+    printk("KDFSan: Enabling kspecem...\n");
+    kspecem_common_late_init();
+    printk("KDFSan: Enabling kspecem: done.\n");
+    return 0;
+  }
   printk("KDFSan: Checking policies...\n");
   kdf_check_policies();
   printk("KDFSan: Enabling...\n");
@@ -202,6 +209,7 @@ int __init kdfsan_init(void) {
   debugfs_create_file("enable", 0444, kdfsan_dir, NULL, &kdfsan_enable_fops);
   debugfs_create_u8("syscall_label_type", 0666, kdfsan_dir,
       &kdf_dbgfs_syscall_label_type);
+  debugfs_create_bool("disable_tainting", 0666, kdfsan_dir, &kdf_dbgfs_disable_tainting);
   debugfs_create_bool("run_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_tests);
   debugfs_create_bool("run_kocher_tests", 0666, kdfsan_dir, &kdf_dbgfs_run_kocher_tests);
   debugfs_create_bool("run_specfuzz_policies", 0666, kdfsan_dir, &kdf_dbgfs_run_specfuzz_policies);
